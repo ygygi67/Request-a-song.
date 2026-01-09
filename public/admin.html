@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Admin - ระบบขอเพลง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(99, 102, 241, 0.6);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .video-fullscreen-btn {
+            position: absolute;
+            bottom: 60px;
+            /* Position above seeker */
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            opacity: 1;
+            /* Always visible for mobile */
+            transition: all 0.3s;
+        }
+
+        .video-fullscreen-btn:hover {
+            background: rgba(99, 102, 241, 0.8);
+            transform: scale(1.05);
+        }
+
+        .now-playing:hover .video-fullscreen-btn {
+            opacity: 1;
+        }
+
+        body.hide-cursor {
+            cursor: none;
+        }
+
+        .fullscreen-btn,
+        .video-fullscreen-btn {
+            display: none !important;
+            /* Hide details as requested */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="card login-card">
+            <div class="card-header" style="justify-content: center; flex-direction: column; text-align: center;">
+                <div class="icon" style="margin-bottom: 1rem;">🔐</div>
+                <h2>เข้าสู่ระบบแอดมิน</h2>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="passwordInput">รหัสผ่าน</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔑</span>
+                        <input type="password" id="passwordInput" placeholder="ใส่รหัสผ่าน" required>
+                    </div>
+                    <small class="text-muted" id="loginError" style="color: var(--danger);"></small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="container hidden" id="adminDashboard">
+        <button class="fullscreen-btn" id="fullscreenBtn" title="Full Screen">⛶</button>
+        <!-- Header -->
+        <header class="admin-header">
+            <div>
+                <h1>👨‍💼 แอดมิน</h1>
+                <p class="text-muted">จัดการคิวเพลง</p>
+                <div class="update-status">
+                    <span class="update-dot" id="updateDot"></span>
+                    <span id="updateText">กำลังซิงก์ข้อมูล...</span>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="logout()">
+                🚪 ออกจากระบบ
+            </button>
+        </header>
+
+        <!-- Stats -->
+        <div class="admin-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="statQueue">0</div>
+                <div class="stat-label">เพลงในคิว</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">เพลงทั้งหมด</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statTime">0 นาที</div>
+                <div class="stat-label">เวลารอทั้งหมด</div>
+            </div>
+        </div>
+
+        <!-- Now Playing Control -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="icon">🎧</div>
+                <div>
+                    <h2>กำลังเล่น</h2>
+                    <p class="text-muted">ควบคุมการเล่นเพลง</p>
+                </div>
+            </div>
+
+            <div id="nowPlayingSection">
+                <div class="now-playing" id="nowPlaying">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-family='Kanit' font-size='100' fill='%236366f1' text-anchor='middle' dy='30'%3E🎵%3C/text%3E%3C/svg%3E"
+                        alt="" class="now-playing-thumbnail" id="npThumbnail">
+                    <div class="now-playing-title" id="npTitle">ไม่มีเพลงที่เล่น</div>
+                    <div class="now-playing-artist" id="npArtist">-</div>
+
+                    <!-- Seekable Progress Bar -->
+                    <div class="progress-container">
+                        <input type="range" class="seek-bar" id="seekBar" min="0" max="100" value="0" step="0.1"
+                            onchange="handleSeek(this.value)">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="npProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-time">
+                        <span id="npCurrentTime">0:00</span>
+                        <span id="npDuration">0:00</span>
+                    </div>
+
+                    <div class="player-controls">
+                        <button class="btn btn-icon btn-secondary" onclick="adjustTime(-10)" title="ย้อยกลับ 10 วินาที">
+                            ⏪
+                        </button>
+                        <button class="btn btn-icon btn-secondary" id="repeatBtn" onclick="toggleRepeat()"
+                            title="วนซ้ำเพลง">
+                            🔁
+                        </button>
+                        <button class="btn btn-icon btn-play" id="playBtn" onclick="togglePlay()">
+                            ▶️
+                        </button>
+                        <button class="btn btn-icon btn-secondary" onclick="skipSong()" title="ข้ามเพลง">
+                            ⏭️
+                        </button>
+                    </div>
+
+                    <!-- Volume Control -->
+                    <div class="volume-control"
+                        style="display: flex; align-items: center; gap: 10px; margin-top: 15px; justify-content: center;">
+                        <span title="เสียง">🔊</span>
+                        <input type="range" id="adminVolumeSlider" min="0" max="100" value="100"
+                            style="width: 150px; accent-color: #6366f1;" onchange="adjustVolume(this.value)">
+                        <span id="volumeValue">100%</span>
+                    </div>
+
+                    <div class="player-controls" style="margin-top: 10px;">
+                        <button class="btn btn-icon btn-secondary" onclick="toggleCinema()"
+                            title="โหมดโรงหนัง (ขยายจอ Player)">
+                            🖵
+                        </button>
+                        <button class="btn btn-icon btn-secondary" onclick="adjustTime(10)"
+                            title="ไปข้างหน้า 10 วินาที">
+                            ⏩
+                        </button>
+                        <button class="btn btn-icon btn-secondary" onclick="stopPlayback()" title="หยุดเล่น">
+                            ⏹️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Up Next -->
+                <div class="up-next mt-2" id="upNext">
+                    <div class="up-next-label">ถัดไป:</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='45' viewBox='0 0 80 45'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='20' text-anchor='middle' dy='7'%3E🎵%3C/text%3E%3C/svg%3E"
+                        alt="" id="nextThumbnail"
+                        style="width: 80px; height: 45px; border-radius: 4px; object-fit: cover;">
+                    <div class="up-next-info">
+                        <div class="up-next-title" id="nextTitle">ไม่มีเพลงถัดไป</div>
+                        <div class="up-next-artist" id="nextArtist">-</div>
+                    </div>
+                    <div id="nextActions" style="display: none;">
+                        <button class="btn btn-danger btn-sm" id="rejectNextBtn" onclick="rejectNextSong()"
+                            title="ปฏิเสธเพลงนี้">
+                            ❌ ปฏิเสธ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Management -->
+        <div class="card">
+            <div class="card-header">
+                <div class="icon">📋</div>
+                <div>
+                    <h2>จัดการคิว</h2>
+                    <p class="text-muted">ปฏิเสธเพลงที่ไม่เหมาะสม</p>
+                </div>
+            </div>
+
+            <div id="adminQueueList" class="queue-list">
+                <div class="text-center text-muted" id="adminEmptyQueue">
+                    <p>ไม่มีเพลงในคิว</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Link Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔗 แก้ไขลิงก์เพลง</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>ลิงก์เพลงใหม่ (YouTube/Spotify)</label>
+                    <input type="text" id="newLinkInput" placeholder="วางลิงก์ที่นี่...">
+                </div>
+                <div id="editError" class="text-danger mt-1"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
+                <button class="btn btn-primary" id="saveLinkBtn" onclick="saveSongLink()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>
