@@ -34,9 +34,9 @@
 
 ### 1. ติดตั้ง (Setup)
 ```bash
-#Clone โปรเจกต์ (หรือดาวน์โหลดไฟล์)
-git clone https://github.com/yourusername/song-request-system.git
-cd song-request-system
+# Clone โปรเจกต์
+git clone https://github.com/ygygi67/Request-a-song.git
+cd Request-a-song
 
 # เข้าไปที่โฟลเดอร์ server และติดตั้งแพ็คเกจ
 cd server
