@@ -5,16 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎵 ระบบขอเพลง</title>
-    <meta name="description" content="ระบบขอเพลงออนไลน์ ส่งเพลงที่อยากฟังและดูคิวเพลงแบบเรียลไทม์">
+    <meta name="description" content="ระบบขอเพลงออนไลน์โดย ygygi67 ส่งเพลงที่อยากฟังและดูคิวเพลงแบบเรียลไทม์">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎵</text></svg>">
 </head>
 
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>🎵 ระบบขอเพลง</h1>
+            <h1>🎵 ระบบขอเพลง โดย ygygi67</h1>
             <p>ส่งเพลงที่อยากฟัง แล้วรอดูคิว!</p>
         </header>
 
@@ -34,7 +36,7 @@
                     <label for="nameInput">ชื่อผู้ขอ</label>
                     <div class="input-wrapper">
                         <span class="input-icon">👤</span>
-                        <input type="text" id="nameInput" placeholder="ใส่ชื่อของคุณ (ไม่บังคับ)" autocomplete="off">
+                        <input type="text" id="nameInput" placeholder="ใส่ชื่อของคุณ" autocomplete="off">
                         <div class="autocomplete-dropdown" id="nameDropdown"></div>
                     </div>
                     <small class="text-muted mt-1" id="nameError"></small>
@@ -57,7 +59,7 @@
                     <label for="linkInput">ลิงค์เพลง (YouTube, Spotify, SoundCloud, Apple Music)</label>
                     <div class="input-wrapper">
                         <span class="input-icon">🔗</span>
-                        <input type="url" id="linkInput" placeholder="วางลิงค์เพลงที่นี่ (ไม่บังคับ)">
+                        <input type="url" id="linkInput" placeholder="วางลิงค์เพลงที่นี่">
                     </div>
                     <small class="text-muted mt-1" id="linkError"></small>
                     <div id="linkPreview" class="hidden mt-2"></div>
@@ -90,6 +92,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- History Section -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <div class="icon">🕒</div>
+                <div>
+                    <h2>เพิ่งเล่นจบไป</h2>
+                    <p class="text-muted">ประวัติเพลงที่เปิดจบแล้ว</p>
+                </div>
+            </div>
+
+            <div id="historyList" class="queue-list" style="min-height: 80px;">
+                <!-- History items will be inserted here -->
+                <div class="text-center text-muted py-4" id="emptyHistory">
+                    <p>ยังไม่มีประวัติการเล่น</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Container -->
@@ -102,7 +122,7 @@
                 <h3>⚠️ เพลงซ้ำ</h3>
                 <button class="modal-close" onclick="closeDuplicateModal()">×</button>
             </div>
-            <p>เพลงนี้เคยถูกขอไปแล้วในคิว คุณต้องการส่งซ้ำหรือไม่?</p>
+            <p>เพลงนี้เคยถูกขอไปแล้วในวันนี้ คุณต้องการส่งซ้ำหรือไม่?</p>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeDuplicateModal()">ยกเลิก</button>
                 <button class="btn btn-primary" onclick="confirmDuplicate()">ส่งเพลงซ้ำ</button>

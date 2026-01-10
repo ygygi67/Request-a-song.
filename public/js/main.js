@@ -10,6 +10,7 @@ const nameDropdown = document.getElementById('nameDropdown');
 const songDropdown = document.getElementById('songDropdown');
 const linkPreview = document.getElementById('linkPreview');
 const queueList = document.getElementById('queueList');
+const historyList = document.getElementById('historyList'); // Add this
 const emptyQueue = document.getElementById('emptyQueue');
 const submitBtn = document.getElementById('submitBtn');
 const duplicateModal = document.getElementById('duplicateModal');
@@ -31,14 +32,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadNames();
     loadQueue();
+    loadHistory(); // Add this
     setupEventListeners();
+    detectOnlineMode();
 
-    // Auto refresh queue every 10 seconds
-    setInterval(loadQueue, 10000);
+    // Auto refresh every 10 seconds
+    setInterval(() => {
+        loadQueue();
+        loadHistory();
+    }, 10000);
 
     // Update countdowns every second
     setInterval(updateCountdowns, 1000);
 });
+
+// Detect if running on Online Tunnel
+function detectOnlineMode() {
+    const host = window.location.hostname;
+    if (host.includes('localtunnel.me') || host.includes('lt.dev')) {
+        const header = document.querySelector('.header');
+        if (header) {
+            const badge = document.createElement('div');
+            badge.style.display = 'inline-block';
+            badge.style.background = 'rgba(0, 255, 136, 0.15)';
+            badge.style.color = '#00ff88';
+            badge.style.border = '1px solid #00ff88';
+            badge.style.padding = '2px 10px';
+            badge.style.borderRadius = '50px';
+            badge.style.fontSize = '0.7rem';
+            badge.style.marginTop = '10px';
+            badge.style.fontWeight = 'bold';
+            badge.innerHTML = '🌐 Online Mode';
+            header.appendChild(badge);
+        }
+    }
+}
 
 // ===== Event Listeners =====
 function setupEventListeners() {
@@ -171,16 +199,20 @@ async function searchYouTube(query) {
 }
 
 function renderSongSuggestions(results) {
-    songDropdown.innerHTML = results.slice(0, 5).map((item) => `
-        <div class="autocomplete-item" onclick='selectSong(${JSON.stringify(item)})'>
+    songDropdown.innerHTML = '';
+    results.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.innerHTML = `
             ${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '<span>🎵</span>'}
             <div class="info">
                 <div class="title">${escapeHtml(item.title)}</div>
                 <div class="meta">${escapeHtml(item.author || '')}</div>
             </div>
-        </div>
-    `).join('');
-
+        `;
+        div.onclick = () => selectSong(item);
+        songDropdown.appendChild(div);
+    });
     songDropdown.classList.add('show');
 }
 
@@ -579,4 +611,44 @@ function showToast(message, type = 'info') {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ===== Load History =====
+async function loadHistory() {
+    try {
+        const response = await fetch(`${API_BASE}/api/history`);
+        const history = await response.json();
+        renderHistory(history);
+    } catch (error) {
+        console.error('Error loading history:', error);
+    }
+}
+
+// ===== Render History =====
+function renderHistory(history) {
+    if (!historyList) return;
+
+    if (history.length === 0) {
+        historyList.innerHTML = `
+            <div class="text-center text-muted py-4" id="emptyHistory">
+                <p>ยังไม่มีประวัติการเล่น</p>
+            </div>
+        `;
+        return;
+    }
+
+    historyList.innerHTML = history.map((song, index) => `
+        <div class="queue-item" style="opacity: 0.8; border-left: 4px solid var(--accent-primary);">
+            <div class="song-info">
+                <div class="song-name">${escapeHtml(song.songName)}</div>
+                <div class="song-meta">
+                    <span>👤 ${escapeHtml(song.name)}</span>
+                    <span style="margin-left: 10px;">🕒 เล่นจบเมื่อ ${formatTime(new Date(song.playedAt))}</span>
+                </div>
+            </div>
+            <div class="queue-actions">
+                <span class="badge" style="background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid #00ff88;">เล่นจบแล้ว</span>
+            </div>
+        </div>
+    `).join('');
 }

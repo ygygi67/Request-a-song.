@@ -56,7 +56,18 @@ function onPlayerStateChange(event) {
     else if (event.data === 5 && isPlaying) {
         console.log('Video cued, starting playback...');
         if (videoWrapper) videoWrapper.classList.add('active');
+
+        // Try playing with sound first
         tubePlayer.playVideo();
+
+        // Check if playback actually started, if not, try muted (Autoplay Policy fallback)
+        setTimeout(() => {
+            if (tubePlayer.getPlayerState() !== 1) { // Not playing
+                console.log('Autoplay blocked with sound, attempting muted play...');
+                tubePlayer.mute();
+                tubePlayer.playVideo();
+            }
+        }, 500);
     }
 }
 
@@ -88,23 +99,62 @@ document.addEventListener('DOMContentLoaded', () => {
         onYouTubeIframeAPIReady();
     }
 
-    // Fetch data from server every 3 seconds
-    setInterval(loadData, 3000);
+    // Fetch data from server every 2 seconds (faster sync)
+    setInterval(loadData, 2000);
 
     // Smooth UI update every 100ms
     setInterval(updateUIProgress, 100);
+
+    // Global interaction listener to unmute if needed (Handles browser Autoplay Policy)
+    window.addEventListener('click', () => {
+        if (tubePlayer && tubePlayer.unMute && isPlaying) {
+            tubePlayer.unMute();
+            tubePlayer.setVolume(100);
+            console.log('Audio unmuted by user interaction');
+        }
+    }, { once: true });
+
+    detectOnlineMode();
 });
+
+// Detect if running on Online Tunnel
+function detectOnlineMode() {
+    const host = window.location.hostname;
+    if (host.includes('localtunnel.me') || host.includes('lt.dev')) {
+        const badge = document.createElement('div');
+        badge.style.position = 'fixed';
+        badge.style.bottom = '20px';
+        badge.style.right = '20px';
+        badge.style.background = 'rgba(0, 255, 136, 0.15)';
+        badge.style.color = '#00ff88';
+        badge.style.border = '1px solid #00ff88';
+        badge.style.padding = '5px 15px';
+        badge.style.borderRadius = '50px';
+        badge.style.fontSize = '0.8rem';
+        badge.style.fontWeight = 'bold';
+        badge.style.zIndex = '9999';
+        badge.style.opacity = '0.5';
+        badge.style.pointerEvents = 'none';
+        badge.innerHTML = '🌐 Online Mode';
+        document.body.appendChild(badge);
+    }
+}
 
 // ===== Load Data =====
 async function loadData() {
     try {
-        const [currentRes, queueRes] = await Promise.all([
+        const [currentRes, queueRes, statsRes] = await Promise.all([
             fetch('/api/songs/current'),
-            fetch('/api/songs')
+            fetch('/api/songs'),
+            fetch('/api/stats')
         ]);
 
         const currentData = await currentRes.json();
         const queueData = await queueRes.json();
+        const statsData = await statsRes.json();
+
+        const todayAt = new Date().toISOString().split('T')[0];
+        const playedToday = statsData[todayAt] || 0;
 
         const newSong = currentData.current;
         const newIsPlaying = currentData.isPlaying;
@@ -112,27 +162,42 @@ async function loadData() {
 
         // Handle song logic
         if (newSong) {
-            // New song or resuming
-            if (!currentSong || newSong.id !== currentSong.id) {
+            // Check if player actually has THIS video loaded
+            let isCurrentVideoInPlayer = false;
+            try {
+                if (tubePlayer && tubePlayer.getVideoData) {
+                    const videoData = tubePlayer.getVideoData();
+                    isCurrentVideoInPlayer = videoData && videoData.video_id === newSong.videoInfo?.videoId;
+                }
+            } catch (e) {
+                console.warn('Could not check player video data:', e);
+            }
+
+            // Load if: Different song OR currentSong is missing OR it's not actually in the player yet
+            if (!currentSong || newSong.id !== currentSong.id || !isCurrentVideoInPlayer) {
+                console.log('Loading/Syncing video:', newSong.songName);
                 currentSong = newSong;
                 songDuration = currentSong.duration || 180;
 
                 if (tubePlayer && tubePlayer.loadVideoById && currentSong.videoInfo?.videoId) {
                     tubePlayer.loadVideoById({
                         videoId: currentSong.videoInfo.videoId,
-                        startSeconds: currentData.currentTime || 0,
+                        startSeconds: (currentData.currentTime || 0) + 0.5, // Buffer a bit
                         suggestedQuality: 'hd1080'
                     });
                     if (tubePlayer.setVolume) tubePlayer.setVolume(100);
                 }
             } else {
-                // If song is the same, check for drastic time offset (seeking)
+                // If song is the same and loaded, check for drastic time offset (seeking)
                 if (tubePlayer && tubePlayer.getCurrentTime && newIsPlaying) {
                     const playerTime = tubePlayer.getCurrentTime();
+                    // YT Player state 1 is playing, 3 is buffering, 2 is paused
+                    const playerStatus = tubePlayer.getPlayerState();
+
                     const offset = Math.abs(playerTime - (currentData.currentTime || 0));
 
-                    // If more than 1 second off, sync it (admin jumped)
-                    if (offset > 1) {
+                    // If more than 2 seconds off and not buffering, sync it
+                    if (offset > 2 && playerStatus !== 3) {
                         console.log('Seeking to match server time:', currentData.currentTime);
                         tubePlayer.seekTo(currentData.currentTime, true);
                     }
@@ -185,27 +250,29 @@ async function loadData() {
         serverCurrentTime = currentData.currentTime || 0;
         lastUpdateTimestamp = Date.now();
 
-        updateUIDisplay(currentData, queueData);
+        updateUIDisplay(currentData, queueData, playedToday);
     } catch (error) {
         console.error('Error loading data:', error);
     }
 }
 
 // ===== Update UI =====
-function updateUIDisplay(currentData, queueData) {
+function updateUIDisplay(currentData, queueData, playedToday = 0) {
     const song = currentData.current;
 
     // Toggle now playing/idle screen
     if (!song) {
         nowPlaying.classList.add('hidden');
-        document.getElementById('currentInfoBox').style.display = 'none'; // Hide and reflow
+        const infoBox = document.getElementById('currentInfoBox');
+        if (infoBox) infoBox.classList.add('hidden');
         idleMessage.classList.remove('hidden');
-        renderMiniQueue(queueData); // Ensure queue is still rendered!
+        renderMiniQueue(queueData, playedToday); // Ensure queue is still rendered!
         return;
     }
 
     nowPlaying.classList.remove('hidden');
-    document.getElementById('currentInfoBox').style.display = 'block'; // Show back
+    const infoBox = document.getElementById('currentInfoBox');
+    if (infoBox) infoBox.classList.remove('hidden');
     idleMessage.classList.add('hidden');
 
     // Update main info
@@ -213,13 +280,43 @@ function updateUIDisplay(currentData, queueData) {
     const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%230f0f19'/%3E%3Ctext x='50%25' y='50%25' font-family='Kanit' font-size='120' fill='%236366f1' text-anchor='middle' dy='40'%3E🎵%3C/text%3E%3C/svg%3E";
 
     const thumbnail = info.thumbnail || placeholder;
-    document.getElementById('npThumbnail').src = thumbnail;
-    document.getElementById('npBgBlur').src = thumbnail;
-    document.getElementById('npTitle').textContent = song.songName;
-    document.getElementById('npArtist').textContent = info.author || '-';
-    document.getElementById('requesterName').textContent = song.name || '-';
+    const thumbnailEl = document.getElementById('npThumbnail');
+    if (thumbnailEl) thumbnailEl.src = thumbnail;
+    const bgBlurEl = document.getElementById('npBgBlur');
+    if (bgBlurEl) bgBlurEl.src = thumbnail;
 
-    renderMiniQueue(queueData);
+    const titleEl = document.getElementById('npTitle');
+    if (titleEl) titleEl.textContent = song.songName;
+    const artistEl = document.getElementById('npArtist');
+    if (artistEl) artistEl.textContent = info.author || '-';
+    const requesterEl = document.getElementById('requesterName');
+    if (requesterEl) requesterEl.textContent = song.name || '-';
+
+    // Update song counter (Song #X of Today)
+    const badge = document.getElementById('songCounterBadge');
+    if (badge) {
+        // Current song is playedToday + 1
+        badge.textContent = `เพลงที่ ${playedToday + 1} ของวันนี้`;
+    }
+
+    renderMiniQueue(queueData, playedToday);
+}
+
+async function updateSongCounter() {
+    const badge = document.getElementById('songCounterBadge');
+    if (!badge) return;
+
+    try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        const today = new Date().toISOString().split('T')[0];
+        const playedToday = stats[today] || 0;
+
+        // Current song is playedToday + 1
+        badge.textContent = `เพลงที่ ${playedToday + 1} ของวันนี้`;
+    } catch (error) {
+        console.error('Error updating song counter:', error);
+    }
 }
 
 function updateUIProgress() {
@@ -243,7 +340,7 @@ function updateUIProgress() {
     durationEl.textContent = '-' + formatDuration(remaining);
 }
 
-function renderMiniQueue(songs) {
+function renderMiniQueue(songs, playedToday = 0) {
     const queueHeader = document.getElementById('queueHeaderTitle');
     if (queueHeader) {
         queueHeader.textContent = `🎶 เพลงถัดไป (${songs.length} เพลง)`;
@@ -276,9 +373,12 @@ function renderMiniQueue(songs) {
         const isNew = !isFirstRender && !lastQueueIds.has(song.id);
         const animationStyle = isNew ? 'animation: itemSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards, itemFlash 1.5s ease-out;' : '';
 
+        // Sequence number = Played Today + Current Song (1) + Current Position in queue (index + 1)
+        const sequenceNumber = playedToday + 1 + (index + 1);
+
         return `
             <div class="mini-queue-item" style="${animationStyle}">
-                <div class="queue-badge">${index + 1}</div>
+                <div class="queue-badge">${sequenceNumber}</div>
                 <div class="mini-queue-thumb-wrapper">
                     <img src="${thumbnail}" alt="" class="mini-queue-thumb" onerror="this.src='${placeholder}'">
                 </div>

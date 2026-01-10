@@ -32,7 +32,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         seekBar.addEventListener('mouseup', () => isDraggingSeekBar = false);
         seekBar.addEventListener('touchend', () => isDraggingSeekBar = false);
     }
+
+    detectOnlineMode();
 });
+
+// Detect if running on Online Tunnel
+function detectOnlineMode() {
+    const host = window.location.hostname;
+    if (host.includes('localtunnel.me') || host.includes('lt.dev')) {
+        const dashboard = document.querySelector('.admin-container') || document.body;
+        const badge = document.createElement('div');
+        badge.style.position = 'fixed';
+        badge.style.top = '10px';
+        badge.style.right = '10px';
+        badge.style.background = 'rgba(0, 255, 136, 0.15)';
+        badge.style.color = '#00ff88';
+        badge.style.border = '1px solid #00ff88';
+        badge.style.padding = '4px 12px';
+        badge.style.borderRadius = '50px';
+        badge.style.fontSize = '0.75rem';
+        badge.style.fontWeight = 'bold';
+        badge.style.zIndex = '9999';
+        badge.innerHTML = '🌐 Online Mode';
+        dashboard.appendChild(badge);
+    }
+}
 
 async function validateSession() {
     try {
@@ -100,7 +124,8 @@ async function loadData() {
     try {
         await Promise.all([
             loadQueue(),
-            loadCurrentSong()
+            loadCurrentSong(),
+            loadStats()
         ]);
 
         if (text) text.textContent = 'ซิงก์ข้อมูลล่าสุด: ' + new Date().toLocaleTimeString();
@@ -645,4 +670,63 @@ function toggleThumbnailFullScreen() {
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
     }
+}
+// ===== Load Stats =====
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        renderStats(stats);
+
+        // Update total songs played today in the top stat card
+        const today = new Date().toISOString().split('T')[0];
+        const statTotalEl = document.getElementById('statTotal');
+        if (statTotalEl) {
+            statTotalEl.textContent = stats[today] || 0;
+            const label = statTotalEl.nextElementSibling;
+            if (label) label.textContent = 'เล่นไปแล้ววันนี้';
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// ===== Render Stats =====
+function renderStats(stats) {
+    const statsList = document.getElementById('statsList');
+    if (!statsList) return;
+
+    const dates = Object.keys(stats).sort((a, b) => new Date(b) - new Date(a));
+
+    if (dates.length === 0) {
+        statsList.innerHTML = '<p class="text-center text-muted">ยังไม่มีสถิติ</p>';
+        return;
+    }
+
+    statsList.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;">
+            ${dates.map(date => {
+        const isToday = date === new Date().toISOString().split('T')[0];
+        return `
+                    <div class="stat-card" style="padding: 15px; border: 1px solid ${isToday ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)'}; background: ${isToday ? 'rgba(99, 102, 241, 0.1)' : 'rgba(255,255,255,0.02)'}; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">${formatDisplayDate(date)}</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: ${isToday ? 'var(--accent-primary)' : 'white'};">${stats[date]} เพลง</div>
+                    </div>
+                `;
+    }).join('')}
+        </div>
+    `;
+}
+
+// Utility: Format YYYY-MM-DD to display text
+function formatDisplayDate(dateStr) {
+    const date = new Date(dateStr);
+    const today = new Date().toISOString().split('T')[0];
+    if (dateStr === today) return 'วันนี้';
+
+    return date.toLocaleDateString('th-TH', {
+        day: 'numeric',
+        month: 'short',
+        year: '2-digit'
+    });
 }
