@@ -3,7 +3,7 @@
 ระบบขอเพลง YouTube แบบ Real-time เหมาะสำหรับร้านอาหาร, งานปาร์ตี้, หรือห้องนั่งเล่น
 ให้เพื่อนๆ ช่วยกันขอเพลงได้ง่ายๆ ผ่านมือถือ พร้อมหน้าจอ Player ที่สวยงามและ Admin Dashboard สุดเทพ!
 
-![Project Preview](https://via.placeholder.com/800x400?text=Song+Request+System+Preview)
+![Project Preview]([https://via.placeholder.com/800x400?text=Song+Request+System+Preview](https://cdn.discordapp.com/attachments/1300061288621277296/1459553259755671775/image.png?ex=6963b266&is=696260e6&hm=ebe36f7712bbfd44fb0012e82ad7340ea6277faa67fa0882df66379f317f645a&))
 
 ## ✨ ฟีเจอร์เด่น (Features)
 
@@ -96,4 +96,5 @@ song-request-system/
 ---
 
 Made with ❤️ by [ygygi67] & Antigravity AI
+
 
