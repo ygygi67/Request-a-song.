@@ -24,7 +24,15 @@ if (!cache.has('currentSong')) {
     cache.set('currentSong', null);
 }
 if (!cache.has('playbackState')) {
-    cache.set('playbackState', { isPlaying: false, currentTime: 0, startedAt: null, isRepeat: false, cinemaMode: false, volume: 100 });
+    cache.set('playbackState', {
+        isPlaying: false,
+        currentTime: 0,
+        startedAt: null,
+        isRepeat: false,
+        cinemaMode: false,
+        volume: 100,
+        lastInteraction: Date.now()
+    });
 }
 if (!cache.has('history')) {
     cache.set('history', {}); // Grouped by date: { '2026-01-10': [song1, song2] }
@@ -307,7 +315,13 @@ app.post('/api/songs/skip', (req, res) => {
         const nextSong = songs.shift();
         cache.set('songs', songs);
         cache.set('currentSong', nextSong);
-        cache.set('playbackState', { isPlaying: true, currentTime: 0, startedAt: Date.now() });
+        cache.set('playbackState', {
+            ...cache.get('playbackState'),
+            isPlaying: true,
+            currentTime: 0,
+            startedAt: Date.now(),
+            lastInteraction: Date.now()
+        });
         res.json({ message: 'Skipped to next song', current: nextSong });
     } else {
         cache.set('currentSong', null);
@@ -338,15 +352,23 @@ app.post('/api/playback', (req, res) => {
             // Resume playback
             const resumeTime = playbackState.currentTime || 0;
             cache.set('playbackState', {
+                ...playbackState,
                 isPlaying: true,
                 currentTime: resumeTime,
-                startedAt: Date.now() - (resumeTime * 1000)
+                startedAt: Date.now() - (resumeTime * 1000),
+                lastInteraction: Date.now()
             });
         }
     } else if (action === 'pause') {
         if (playbackState.isPlaying && playbackState.startedAt) {
             const currentTime = (Date.now() - playbackState.startedAt) / 1000;
-            cache.set('playbackState', { isPlaying: false, currentTime, startedAt: null });
+            cache.set('playbackState', {
+                ...playbackState,
+                isPlaying: false,
+                currentTime,
+                startedAt: null,
+                lastInteraction: Date.now()
+            });
         }
     }
 
@@ -377,6 +399,7 @@ app.post('/api/playback/seek', (req, res) => {
 
     playbackState.currentTime = time;
     playbackState.startedAt = playbackState.isPlaying ? newStartedAt : null;
+    playbackState.lastInteraction = Date.now();
 
     cache.set('playbackState', playbackState);
 
