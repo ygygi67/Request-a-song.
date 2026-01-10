@@ -36,8 +36,8 @@
 ### 1. ติดตั้ง (Setup)
 ```bash
 # Clone โปรเจกต์
-git clone https://github.com/ygygi67/Request-a-song.git
-cd Request-a-song
+git clone https://github.com/ygygi67/Request-a-song.
+cd Request-a-song.
 
 # เข้าไปที่โฟลเดอร์ server และติดตั้งแพ็คเกจ
 cd server
@@ -96,3 +96,4 @@ song-request-system/
 ---
 
 Made with ❤️ by [ygygi67] & Antigravity AI
+
