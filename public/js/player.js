@@ -6,6 +6,7 @@ let tubePlayer = null;
 let lastUpdateTimestamp = 0;
 let serverCurrentTime = 0;
 let songDuration = 0;
+let localLastInteraction = 0; // Track last processed interaction
 let alertTimer = null; // Timer for hiding new song alert
 
 // ===== DOM Elements =====
@@ -191,15 +192,26 @@ async function loadData() {
                 // If song is the same and loaded, check for drastic time offset (seeking)
                 if (tubePlayer && tubePlayer.getCurrentTime && newIsPlaying) {
                     const playerTime = tubePlayer.getCurrentTime();
+                    const serverTime = currentData.currentTime || 0;
+                    const serverLastInteraction = currentData.playbackState?.lastInteraction || 0;
+
                     // YT Player state 1 is playing, 3 is buffering, 2 is paused
                     const playerStatus = tubePlayer.getPlayerState();
 
-                    const offset = Math.abs(playerTime - (currentData.currentTime || 0));
+                    const offset = Math.abs(playerTime - serverTime);
 
-                    // If more than 2 seconds off and not buffering, sync it
-                    if (offset > 2 && playerStatus !== 3) {
-                        console.log('Seeking to match server time:', currentData.currentTime);
-                        tubePlayer.seekTo(currentData.currentTime, true);
+                    // CASE 1: New manual interaction from Admin (e.g., Seek/Skipped)
+                    // We force a sync if interaction timestamp has changed
+                    if (serverLastInteraction !== localLastInteraction) {
+                        console.log('Manual interaction detected. Syncing time:', serverTime);
+                        tubePlayer.seekTo(serverTime, true);
+                        localLastInteraction = serverLastInteraction;
+                    }
+                    // CASE 2: Natural playback drift
+                    // Only sync if the offset is HUGE (to handle major glitches or tab resuming)
+                    else if (offset > 10 && playerStatus !== 3) {
+                        console.log('Massive drift detected (>10s). Syncing:', serverTime);
+                        tubePlayer.seekTo(serverTime, true);
                     }
                 }
             }
