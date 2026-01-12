@@ -616,6 +616,8 @@
 </head>
 
 <body>
+    <div id="connectionWarning" class="connection-warning">⚠️ การเชื่อมต่อขัดข้อง -
+        กำลังพยายามจัดตั้งการเชื่อมต่อใหม่...</div>
     <div class="dynamic-background"></div>
     <div class="player-container">
         <!-- Now Playing Left (Cinema) -->
@@ -669,6 +671,15 @@
                 <div class="queue-preview-title" id="queueHeaderTitle">🎶 เพลงถัดไป </div>
                 <div class="mini-queue" id="miniQueue">
                     <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Lyrics Section (Alternative to Queue) -->
+            <div class="queue-preview hidden" id="lyricsSection">
+                <div class="queue-preview-title">📝 เนื้อเพลง (Lyrics)</div>
+                <div id="lyricsContent"
+                    style="padding: 1.5rem; font-size: 1.2rem; line-height: 1.8; color: var(--text-secondary); height: 100%; overflow-y: auto; white-space: pre-wrap; font-weight: 400; text-align: center;">
+                    กำลังรอเนื้อเพลง...
                 </div>
             </div>
         </div>

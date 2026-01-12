@@ -122,6 +122,7 @@ async function searchYouTube(query) {
                             author: v.ownerText.runs[0].text,
                             thumbnail: v.thumbnail.thumbnails[0].url,
                             url: `https://www.youtube.com/watch?v=${videoId}`,
+                            durationText: v.lengthText ? v.lengthText.simpleText : null,
                             isSuggestion: false
                         };
                     });

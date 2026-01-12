@@ -8,6 +8,37 @@ let serverCurrentTime = 0;
 let songDuration = 0;
 let localLastInteraction = 0; // Track last processed interaction
 let alertTimer = null; // Timer for hiding new song alert
+let isOffline = false;
+
+// ===== Connection Monitoring =====
+function updateConnectionStatus() {
+    const warning = document.getElementById('connectionWarning');
+    if (!warning) return;
+
+    if (!navigator.onLine) {
+        warning.textContent = '❌ อินเทอร์เน็ตขาดการเชื่อมต่อ - กรุณาตรวจสอบเน็ตของคุณ';
+        warning.classList.add('active');
+        isOffline = true;
+    } else if (isOffline) {
+        warning.textContent = '⚠️ กำลังพยายามจัดตั้งการเชื่อมต่อกับเซิร์ฟเวอร์ใหม่...';
+    }
+}
+
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+
+function setConnectionError(active, message) {
+    const warning = document.getElementById('connectionWarning');
+    if (!warning) return;
+
+    if (active) {
+        if (message) warning.textContent = message;
+        warning.classList.add('active');
+    } else {
+        warning.classList.remove('active');
+        isOffline = false;
+    }
+}
 
 // ===== DOM Elements =====
 const nowPlaying = document.getElementById('nowPlaying');
@@ -149,13 +180,17 @@ async function loadData() {
             fetch('/api/songs'),
             fetch('/api/stats')
         ]);
+        setConnectionError(false);
 
         const currentData = await currentRes.json();
         const queueData = await queueRes.json();
-        const statsData = await statsRes.json();
+        let statsData = {};
+        try {
+            statsData = await statsRes.json();
+        } catch (e) { }
 
         const todayAt = new Date().toISOString().split('T')[0];
-        const playedToday = statsData[todayAt] || 0;
+        const playedToday = (currentData.stats && currentData.stats.todayCount) || statsData[todayAt] || 0;
 
         const newSong = currentData.current;
         const newIsPlaying = currentData.isPlaying;
@@ -233,6 +268,19 @@ async function loadData() {
                 }
             }
 
+            // Sync Lyrics Mode
+            const queueSection = document.getElementById('queueSection');
+            const lyricsSection = document.getElementById('lyricsSection');
+            const lyricsContent = document.getElementById('lyricsContent');
+            if (currentData.playbackState && currentData.playbackState.lyricsMode) {
+                if (queueSection) queueSection.classList.add('hidden');
+                if (lyricsSection) lyricsSection.classList.remove('hidden');
+                if (lyricsContent) lyricsContent.textContent = currentData.playbackState.currentLyrics || 'ไม่มีเนื้อเพลง...';
+            } else {
+                if (queueSection) queueSection.classList.remove('hidden');
+                if (lyricsSection) lyricsSection.classList.add('hidden');
+            }
+
 
             // Sync Play/Pause and Visibility
             if (tubePlayer && tubePlayer.getPlayerState) {
@@ -265,6 +313,7 @@ async function loadData() {
         updateUIDisplay(currentData, queueData, playedToday);
     } catch (error) {
         console.error('Error loading data:', error);
+        setConnectionError(true, '⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กำลังลองใหม่...');
     }
 }
 
@@ -312,23 +361,6 @@ function updateUIDisplay(currentData, queueData, playedToday = 0) {
     }
 
     renderMiniQueue(queueData, playedToday);
-}
-
-async function updateSongCounter() {
-    const badge = document.getElementById('songCounterBadge');
-    if (!badge) return;
-
-    try {
-        const response = await fetch('/api/stats');
-        const stats = await response.json();
-        const today = new Date().toISOString().split('T')[0];
-        const playedToday = stats[today] || 0;
-
-        // Current song is playedToday + 1
-        badge.textContent = `เพลงที่ ${playedToday + 1} ของวันนี้`;
-    } catch (error) {
-        console.error('Error updating song counter:', error);
-    }
 }
 
 function updateUIProgress() {

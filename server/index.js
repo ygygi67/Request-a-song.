@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const NodeCache = require('node-cache');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,16 +14,63 @@ const ADMIN_PASSWORD = crypto.randomBytes(4).toString('hex'); // 8 character hex
 // Cache for storing data (in-memory storage)
 const cache = new NodeCache({ stdTTL: 0 });
 
+// Firebase Admin Setup
+let db = null;
+const FIREBASE_SERVICE_ACCOUNT = path.join(__dirname, 'firebase-service-account.json');
+
+if (fs.existsSync(FIREBASE_SERVICE_ACCOUNT)) {
+    try {
+        const admin = require('firebase-admin');
+        const serviceAccount = require(FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        db = admin.firestore();
+        console.log('✅ Firebase initialized successfully');
+    } catch (e) {
+        console.warn('⚠️ Firebase initialization failed (maybe firebase-admin is not installed?):', e.message);
+    }
+} else {
+    console.log('ℹ️ No firebase-service-account.json found. Using local JSON only.');
+}
+
 // Initialize default data
+const QUEUE_FILE = path.join(__dirname, 'queue.json');
+const IP_NAMES_FILE = path.join(__dirname, 'ip_names.json');
+
+// Load queue from file if exists
 if (!cache.has('songs')) {
-    cache.set('songs', []);
+    if (fs.existsSync(QUEUE_FILE)) {
+        try {
+            const queueData = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
+            cache.set('songs', queueData.songs || []);
+            cache.set('currentSong', queueData.currentSong || null);
+            console.log('✅ Queue restored from file:', (queueData.songs || []).length, 'songs');
+        } catch (e) {
+            console.error('Error reading queue file:', e);
+            cache.set('songs', []);
+        }
+    } else {
+        cache.set('songs', []);
+    }
 }
-if (!cache.has('names')) {
-    cache.set('names', []);
+
+// Load IP-to-name mapping
+if (!cache.has('ipNames')) {
+    if (fs.existsSync(IP_NAMES_FILE)) {
+        try {
+            const ipData = JSON.parse(fs.readFileSync(IP_NAMES_FILE, 'utf8'));
+            cache.set('ipNames', ipData);
+        } catch (e) {
+            cache.set('ipNames', {});
+        }
+    } else {
+        cache.set('ipNames', {});
+    }
 }
-if (!cache.has('currentSong')) {
-    cache.set('currentSong', null);
-}
+
+if (!cache.has('names')) cache.set('names', []);
+if (!cache.has('currentSong') && !fs.existsSync(QUEUE_FILE)) cache.set('currentSong', null);
 if (!cache.has('playbackState')) {
     cache.set('playbackState', {
         isPlaying: false,
@@ -30,12 +78,88 @@ if (!cache.has('playbackState')) {
         startedAt: null,
         isRepeat: false,
         cinemaMode: false,
+        lyricsMode: false,
+        currentLyrics: '',
         volume: 100,
         lastInteraction: Date.now()
     });
 }
+
+const HISTORY_FILE = path.join(__dirname, 'history.json');
+
 if (!cache.has('history')) {
-    cache.set('history', {}); // Grouped by date: { '2026-01-10': [song1, song2] }
+    if (fs.existsSync(HISTORY_FILE)) {
+        try {
+            const historyData = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+            cache.set('history', historyData);
+        } catch (e) {
+            console.error('Error reading history file:', e);
+            cache.set('history', {});
+        }
+    } else {
+        cache.set('history', {});
+    }
+}
+
+function saveHistory(history) {
+    try {
+        fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+
+        // Sync to Firebase if available
+        if (db) {
+            const todayAt = new Date().toISOString().split('T')[0];
+            const todayData = history[todayAt] || [];
+
+            // We use a document for each day for performance/organization
+            db.collection('history').doc(todayAt).set({
+                date: todayAt,
+                songs: todayData,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(err => console.error('Firebase sync error:', err));
+        }
+    } catch (e) {
+        console.error('Error saving history file:', e);
+    }
+}
+
+function saveQueue() {
+    try {
+        const queueData = {
+            songs: cache.get('songs') || [],
+            currentSong: cache.get('currentSong') || null
+        };
+        fs.writeFileSync(QUEUE_FILE, JSON.stringify(queueData, null, 2));
+    } catch (e) {
+        console.error('Error saving queue file:', e);
+    }
+}
+
+function saveIpNames() {
+    try {
+        const ipNames = cache.get('ipNames') || {};
+        fs.writeFileSync(IP_NAMES_FILE, JSON.stringify(ipNames, null, 2));
+    } catch (e) {
+        console.error('Error saving IP names file:', e);
+    }
+}
+
+// Initial Migration to Firebase
+if (db) {
+    (async () => {
+        try {
+            const history = cache.get('history') || {};
+            for (const date in history) {
+                await db.collection('history').doc(date).set({
+                    date: date,
+                    songs: history[date],
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            }
+            console.log('✅ History migrated to Firebase');
+        } catch (e) {
+            console.error('Migration error:', e);
+        }
+    })();
 }
 
 // Middleware
@@ -89,14 +213,31 @@ app.get('/api/songs/current', (req, res) => {
         currentTime = (Date.now() - playbackState.startedAt) / 1000;
     }
 
+    const history = cache.get('history') || {};
+    const todayAt = new Date().toISOString().split('T')[0];
+    const todayHistory = history[todayAt] || [];
+
     res.json({
         current: currentSong,
         isPlaying: playbackState.isPlaying,
         isRepeat: playbackState.isRepeat || false,
         currentTime: currentTime,
         nextSong: songs[0] || null,
-        playbackState: playbackState // Include full state (cinemaMode)
+        playbackState: playbackState, // Include full state (cinemaMode)
+        stats: {
+            queueCount: songs.length,
+            todayCount: todayHistory.length + (currentSong ? 1 : 0),
+            totalPlayed: Object.values(history).reduce((acc, curr) => acc + curr.length, 0) + (currentSong ? 1 : 0)
+        }
     });
+});
+
+// Get saved name for current IP
+app.get('/api/names/my', (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ipNames = cache.get('ipNames') || {};
+    const savedName = ipNames[ip] || null;
+    res.json({ name: savedName });
 });
 
 // Submit new song request
@@ -168,6 +309,7 @@ app.post('/api/songs', async (req, res) => {
 
         songs.push(newSong);
         cache.set('songs', songs);
+        saveQueue(); // Persist queue to file
 
         // Save name to history
         if (name && name.trim()) {
@@ -176,6 +318,13 @@ app.post('/api/songs', async (req, res) => {
                 names.push(name.trim());
                 cache.set('names', names);
             }
+
+            // Save IP-to-name mapping
+            const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const ipNames = cache.get('ipNames') || {};
+            ipNames[ip] = name.trim();
+            cache.set('ipNames', ipNames);
+            saveIpNames();
         }
 
         res.status(201).json(newSong);
@@ -267,8 +416,22 @@ app.delete('/api/songs/:id', (req, res) => {
 
     songs[songIndex].status = 'rejected';
     const rejectedSong = songs[songIndex];
+
+    // Log rejected song to history
+    const history = cache.get('history') || {};
+    const todayAt = new Date().toISOString().split('T')[0];
+    if (!history[todayAt]) history[todayAt] = [];
+    history[todayAt].push({
+        ...rejectedSong,
+        status: 'rejected',
+        playedAt: new Date().toISOString()
+    });
+    cache.set('history', history);
+    saveHistory(history);
+
     songs.splice(songIndex, 1);
     cache.set('songs', songs);
+    saveQueue(); // Persist queue
 
     res.json({ message: 'Song rejected', song: rejectedSong });
 });
@@ -296,6 +459,7 @@ app.post('/api/songs/:id/priority', (req, res) => {
     songs.unshift(targetSong);
 
     cache.set('songs', songs);
+    saveQueue(); // Persist queue
     res.json({ message: 'Song prioritized', song: targetSong });
 });
 
@@ -309,6 +473,20 @@ app.post('/api/songs/skip', (req, res) => {
 
     const songs = cache.get('songs') || [];
     const currentSong = cache.get('currentSong');
+
+    // Move current song to history
+    if (currentSong) {
+        const history = cache.get('history') || {};
+        const todayAt = new Date().toISOString().split('T')[0];
+        if (!history[todayAt]) history[todayAt] = [];
+        history[todayAt].push({
+            ...currentSong,
+            status: 'completed',
+            playedAt: new Date().toISOString()
+        });
+        cache.set('history', history);
+        saveHistory(history);
+    }
 
     // Move to next song
     if (songs.length > 0) {
@@ -328,6 +506,7 @@ app.post('/api/songs/skip', (req, res) => {
         cache.set('playbackState', { isPlaying: false, currentTime: 0, startedAt: null });
         res.json({ message: 'No more songs in queue', current: null });
     }
+    saveQueue(); // Persist queue
 });
 
 // Play/Pause control (admin)
@@ -348,6 +527,7 @@ app.post('/api/playback', (req, res) => {
             cache.set('songs', songs);
             cache.set('currentSong', nextSong);
             cache.set('playbackState', { isPlaying: true, currentTime: 0, startedAt: Date.now() });
+            saveQueue(); // Persist queue
         } else if (currentSong) {
             // Resume playback
             const resumeTime = playbackState.currentTime || 0;
@@ -452,31 +632,47 @@ app.post('/api/songs/next', (req, res) => {
                 playedAt: new Date().toISOString()
             });
             cache.set('history', history);
+            saveHistory(history);
         }
 
         cache.set('songs', songs);
         cache.set('currentSong', nextSong);
-        cache.set('playbackState', { ...playbackState, isPlaying: true, currentTime: 0, startedAt: Date.now() });
+        cache.set('playbackState', {
+            ...playbackState,
+            isPlaying: true,
+            currentTime: 0,
+            startedAt: Date.now(),
+            lastInteraction: Date.now()
+        });
+        saveQueue(); // Persist queue
+
+        return res.json({
+            current: nextSong,
+            playbackState: cache.get('playbackState')
+        });
     } else {
-        // Even if no next song, save the last one to history
+        // No more songs
         if (currentSong) {
             const history = cache.get('history') || {};
             const todayAt = new Date().toISOString().split('T')[0];
             if (!history[todayAt]) history[todayAt] = [];
+
             history[todayAt].push({
                 ...currentSong,
                 playedAt: new Date().toISOString()
             });
             cache.set('history', history);
+            saveHistory(history);
         }
+
         cache.set('currentSong', null);
         cache.set('playbackState', { ...playbackState, isPlaying: false, currentTime: 0, startedAt: null });
-    }
 
-    res.json({
-        current: cache.get('currentSong'),
-        playbackState: cache.get('playbackState')
-    });
+        return res.json({
+            current: null,
+            playbackState: cache.get('playbackState')
+        });
+    }
 });
 
 // Get name history
@@ -534,6 +730,24 @@ app.post('/api/validate/link', async (req, res) => {
     }
 });
 
+// Toggle Lyrics Mode
+app.post('/api/admin/lyrics', (req, res) => {
+    const { adminKey, enabled, lyrics } = req.body;
+    if (adminKey !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const currentState = cache.get('playbackState');
+    const newState = {
+        ...currentState,
+        lyricsMode: enabled !== undefined ? enabled : !currentState.lyricsMode,
+        currentLyrics: lyrics !== undefined ? lyrics : currentState.currentLyrics
+    };
+    cache.set('playbackState', newState);
+
+    res.json({ success: true, lyricsMode: newState.lyricsMode, currentLyrics: newState.currentLyrics });
+});
+
 // Search YouTube
 app.get('/api/search/youtube', async (req, res) => {
     try {
@@ -549,6 +763,18 @@ app.get('/api/search/youtube', async (req, res) => {
         console.error('Search error:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// Get statistics
+app.get('/api/stats', (req, res) => {
+    const history = cache.get('history') || {};
+    const stats = {};
+
+    Object.keys(history).forEach(date => {
+        stats[date] = history[date].length;
+    });
+
+    res.json(stats);
 });
 
 // Admin login

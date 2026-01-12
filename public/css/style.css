@@ -210,6 +210,7 @@ select {
 /* Custom Range Input (Volume & Seeker) */
 input[type="range"] {
     -webkit-appearance: none;
+    appearance: none;
     background: transparent;
     cursor: pointer;
 }
@@ -222,6 +223,8 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
     height: 16px;
     width: 16px;
     background: var(--accent-primary);
@@ -732,8 +735,6 @@ input::placeholder {
     font-size: 2.5rem;
     font-weight: bold;
     background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
@@ -1066,4 +1067,93 @@ input::placeholder {
 
 .hidden {
     display: none !important;
+}
+
+/* ===== History ===== */
+.history-card {
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.history-card:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--accent-primary);
+    transform: translateY(-5px);
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+}
+
+.history-item:hover {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.history-thumb {
+    width: 80px;
+    height: 45px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.history-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===== Connection Warning ===== */
+.connection-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #f59e0b;
+    color: #000;
+    text-align: center;
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    z-index: 9999;
+    display: none;
+    animation: slideDown 0.3s ease;
+}
+
+.connection-warning.active {
+    display: block;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }

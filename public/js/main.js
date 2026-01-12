@@ -21,13 +21,55 @@ let pendingRequest = null;
 let searchTimeout = null;
 let selectedVideoInfo = null;
 let lastQueueIds = new Set(); // Track already seen song IDs to avoid re-animating
+let isOffline = false;
+
+// ===== Connection Monitoring =====
+function updateConnectionStatus() {
+    const warning = document.getElementById('connectionWarning');
+    if (!warning) return;
+
+    if (!navigator.onLine) {
+        warning.textContent = '❌ อินเทอร์เน็ตขาดการเชื่อมต่อ - กรุณาตรวจสอบเน็ตของคุณ';
+        warning.classList.add('active');
+        isOffline = true;
+    } else if (isOffline) {
+        warning.textContent = '⚠️ กำลังพยายามจัดตั้งการเชื่อมต่อกับเซิร์ฟเวอร์ใหม่...';
+        // We keep it active until a successful fetch occurs
+    }
+}
+
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+
+function setConnectionError(active, message) {
+    const warning = document.getElementById('connectionWarning');
+    if (!warning) return;
+
+    if (active) {
+        if (message) warning.textContent = message;
+        warning.classList.add('active');
+    } else {
+        warning.classList.remove('active');
+        isOffline = false;
+    }
+}
 
 // ===== Initialize =====
-document.addEventListener('DOMContentLoaded', () => {
-    // Load saved name
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load saved name from localStorage first
     const savedName = localStorage.getItem('savedName');
     if (savedName) {
         nameInput.value = savedName;
+    } else {
+        // Fallback: Try to get name from server by IP
+        try {
+            const res = await fetch('/api/names/my');
+            const data = await res.json();
+            if (data.name) {
+                nameInput.value = data.name;
+                localStorage.setItem('savedName', data.name);
+            }
+        } catch (e) { }
     }
 
     loadNames();
@@ -207,7 +249,10 @@ function renderSongSuggestions(results) {
             ${item.thumbnail ? `<img src="${item.thumbnail}" alt="">` : '<span>🎵</span>'}
             <div class="info">
                 <div class="title">${escapeHtml(item.title)}</div>
-                <div class="meta">${escapeHtml(item.author || '')}</div>
+                <div class="meta">
+                    ${escapeHtml(item.author || '')}
+                    ${item.durationText ? `<span style="margin-left: 8px; opacity: 0.7;">⏱️ ${item.durationText}</span>` : ''}
+                </div>
             </div>
         `;
         div.onclick = () => selectSong(item);
@@ -417,23 +462,24 @@ async function loadQueue() {
     try {
         const response = await fetch(`${API_BASE}/api/songs`);
         const songs = await response.json();
+        setConnectionError(false); // Success!
 
+        if (songs.length === 0) {
+            emptyQueue.style.display = 'block';
+            queueList.innerHTML = '';
+            lastQueueIds.clear();
+            return;
+        }
+
+        emptyQueue.style.display = 'none';
         renderQueue(songs);
     } catch (error) {
         console.error('Error loading queue:', error);
+        setConnectionError(true, '⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กำลังลองใหม่...');
     }
 }
 
 function renderQueue(songs) {
-    if (!songs || songs.length === 0) {
-        emptyQueue.style.display = 'block';
-        queueList.innerHTML = '';
-        queueList.appendChild(emptyQueue);
-        return;
-    }
-
-    emptyQueue.style.display = 'none';
-
     // Track new IDs to apply animation
     const currentIds = new Set(songs.map(s => s.id));
 
