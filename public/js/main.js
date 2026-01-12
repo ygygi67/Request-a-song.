@@ -10,7 +10,8 @@ const nameDropdown = document.getElementById('nameDropdown');
 const songDropdown = document.getElementById('songDropdown');
 const linkPreview = document.getElementById('linkPreview');
 const queueList = document.getElementById('queueList');
-const historyList = document.getElementById('historyList'); // Add this
+const historyList = document.getElementById('historyList');
+const rejectedList = document.getElementById('rejectedList');
 const emptyQueue = document.getElementById('emptyQueue');
 const submitBtn = document.getElementById('submitBtn');
 const duplicateModal = document.getElementById('duplicateModal');
@@ -74,7 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadNames();
     loadQueue();
-    loadHistory(); // Add this
+    loadHistory();
+    loadRejected();
     setupEventListeners();
     detectOnlineMode();
 
@@ -82,6 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(() => {
         loadQueue();
         loadHistory();
+        loadRejected();
     }, 10000);
 
     // Update countdowns every second
@@ -572,9 +575,11 @@ function hasVoted(songId, type) {
 
 async function vote(songId, type) {
     const btn = event.currentTarget;
+    const previousVote = hasVoted(songId, null) ? JSON.parse(localStorage.getItem('my_votes') || '{}')[songId] : null;
 
-    if (hasVoted(songId)) {
-        showToast('คุณโหวตเพลงนี้ไปแล้ว', 'info');
+    // If clicking the same vote type, just return (already voted same way)
+    if (previousVote === type) {
+        showToast('คุณโหวตแบบนี้ไปแล้ว', 'info');
         return;
     }
 
@@ -583,8 +588,10 @@ async function vote(songId, type) {
         const response = await fetch(`${API_BASE}/api/songs/${songId}/vote`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type })
+            body: JSON.stringify({ type, previousVote })
         });
+
+        const data = await response.json();
 
         if (response.ok) {
             // Save vote to local storage
@@ -593,9 +600,17 @@ async function vote(songId, type) {
             localStorage.setItem('my_votes', JSON.stringify(votes));
 
             loadQueue();
-            showToast('✅ ขอบคุณสำหรับการโหวต!', 'success');
+
+            // Check for auto-actions
+            if (data.autoAction === 'rejected') {
+                showToast('❌ เพลงถูกปฏิเสธอัตโนมัติ (👎 10+ โหวต)', 'error');
+            } else if (data.autoAction === 'prioritized') {
+                showToast('🚀 เพลงถูกลัดคิวอัตโนมัติ! (👍 15+ โหวต)', 'success');
+            } else {
+                showToast(previousVote ? '✅ เปลี่ยนโหวตเรียบร้อย!' : '✅ ขอบคุณสำหรับการโหวต!', 'success');
+            }
         } else {
-            showToast('พบข้อผิดพลาดขณะโหวต', 'error');
+            showToast(data.error || 'พบข้อผิดพลาดขณะโหวต', 'error');
         }
     } catch (error) {
         console.error('Vote error:', error);
@@ -683,18 +698,101 @@ function renderHistory(history) {
         return;
     }
 
-    historyList.innerHTML = history.map((song, index) => `
-        <div class="queue-item" style="opacity: 0.8; border-left: 4px solid var(--accent-primary);">
+    historyList.innerHTML = history.map((song, index) => {
+        const isRejected = song.status === 'rejected';
+        const borderColor = isRejected ? '#ff4444' : 'var(--accent-primary)';
+        const badgeStyle = isRejected
+            ? 'background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444;'
+            : 'background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid #00ff88;';
+        const badgeText = isRejected ? '❌ ถูกปฏิเสธ' : 'เล่นจบแล้ว';
+        const timeText = isRejected
+            ? `ถูกปฏิเสธ ${formatTimeAgo(new Date(song.playedAt))}`
+            : `เล่นจบเมื่อ ${formatTime(new Date(song.playedAt))}`;
+
+        return `
+        <div class="queue-item" style="opacity: 0.8; border-left: 4px solid ${borderColor};">
             <div class="song-info">
                 <div class="song-name">${escapeHtml(song.songName)}</div>
                 <div class="song-meta">
                     <span>👤 ${escapeHtml(song.name)}</span>
-                    <span style="margin-left: 10px;">🕒 เล่นจบเมื่อ ${formatTime(new Date(song.playedAt))}</span>
+                    <span style="margin-left: 10px;">🕒 ${timeText}</span>
                 </div>
             </div>
             <div class="queue-actions">
-                <span class="badge" style="background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid #00ff88;">เล่นจบแล้ว</span>
+                <span class="badge" style="${badgeStyle}">${badgeText}</span>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
+}
+
+// ===== Session Heartbeat =====
+function startHeartbeat() {
+    const sendPing = () => {
+        const name = localStorage.getItem('requesterName') || '';
+        fetch('/api/sessions/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, type: 'user' })
+        }).catch(err => console.debug('Heartbeat failed'));
+    };
+
+    sendPing(); // Initial ping
+    setInterval(sendPing, 30000); // Every 30 seconds
+}
+
+// ===== Load Rejected Songs =====
+async function loadRejected() {
+    try {
+        const response = await fetch(`${API_BASE}/api/rejected`);
+        const rejected = await response.json();
+        renderRejected(rejected);
+    } catch (error) {
+        console.error('Error loading rejected:', error);
+    }
+}
+
+// ===== Render Rejected Songs =====
+function renderRejected(rejected) {
+    if (!rejectedList) return;
+
+    if (rejected.length === 0) {
+        rejectedList.innerHTML = `
+            <div class="text-center text-muted py-4" id="emptyRejected">
+                <p>ยังไม่มีเพลงที่ถูกปฏิเสธ</p>
+            </div>
+        `;
+        return;
+    }
+
+    rejectedList.innerHTML = rejected.map((song, index) => {
+        const rejectedAt = new Date(song.rejectedAt);
+        const timeAgo = formatTimeAgo(rejectedAt);
+
+        return `
+        <div class="queue-item" style="opacity: 0.7; border-left: 4px solid #ff4444;">
+            <div class="song-info">
+                <div class="song-name">${escapeHtml(song.songName)}</div>
+                <div class="song-meta">
+                    <span>👤 ${escapeHtml(song.name)}</span>
+                    <span style="margin-left: 10px;">🕒 ถูกปฏิเสธ ${timeAgo}</span>
+                </div>
+            </div>
+            <div class="queue-actions">
+                <span class="badge" style="background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444;">ถูกปฏิเสธ</span>
+            </div>
+        </div>
+    `;
+    }).join('');
+}
+
+// ===== Format Time Ago =====
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000); // in seconds
+
+    if (diff < 60) return 'เมื่อกี้';
+    if (diff < 3600) return `${Math.floor(diff / 60)} นาทีที่แล้ว`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} ชั่วโมงที่แล้ว`;
+    return `${Math.floor(diff / 86400)} วันที่แล้ว`;
 }

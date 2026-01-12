@@ -476,7 +476,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ===== Invisible Control: Double Click to Fullscreen =====
 document.addEventListener('dblclick', () => {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(e => console.error(e));
@@ -484,3 +483,17 @@ document.addEventListener('dblclick', () => {
         if (document.exitFullscreen) document.exitFullscreen();
     }
 });
+
+// ===== Session Heartbeat =====
+(function startHeartbeat() {
+    const sendPing = () => {
+        fetch('/api/sessions/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'หน้าเครื่องเล่น (Player)', type: 'player' })
+        }).catch(err => console.debug('Heartbeat failed'));
+    };
+
+    sendPing();
+    setInterval(sendPing, 30000);
+})();

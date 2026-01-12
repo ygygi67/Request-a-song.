@@ -39,6 +39,14 @@ async function startTunnel() {
 
         const tunnel = await localtunnel({ port: 3000 });
         activeTunnel = tunnel;
+
+        // Show reconnection banner if this is a retry
+        if (retryCount > 0) {
+            console.log(`\n${green}════════════════════════════════════════════════════════`);
+            console.log(`🔄 RECONNECTED! ลิงก์ใหม่สร้างเสร็จแล้ว!`);
+            console.log(`════════════════════════════════════════════════════════${reset}`);
+        }
+
         retryCount = 0; // Reset on success
 
         console.log(`\n${white}═══════════════════════════════════════════════════════`);
@@ -77,8 +85,8 @@ async function startTunnel() {
     } catch (error) {
         retryCount++;
         console.error(`\n${red}❌ Tunnel Connection Failed: ${error.message}${reset}`);
-        console.log(`${yellow}🔄 พยายามเชื่อมต่อใหม่ใน 10 วินาที... (ครั้งที่ ${retryCount})${reset}`);
-        setTimeout(startTunnel, 10000);
+        console.log(`${yellow}🔄 พยายามเชื่อมต่อใหม่ใน 1 วินาที... (ครั้งที่ ${retryCount + 1})${reset}`);
+        setTimeout(startTunnel, 1000);
     }
 }
 

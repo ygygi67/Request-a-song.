@@ -156,7 +156,8 @@ async function loadData() {
         await Promise.all([
             loadQueue(),
             loadCurrentSong(),
-            loadStats()
+            loadStats(),
+            loadSessions()
         ]);
         setConnectionError(false);
         if (text) text.textContent = 'ซิงก์ข้อมูลล่าสุด: ' + new Date().toLocaleTimeString();
@@ -866,3 +867,65 @@ function formatDisplayDate(dateStr) {
         year: '2-digit'
     });
 }
+
+// ===== Session Heartbeat & Monitoring =====
+(function startHeartbeat() {
+    const sendPing = () => {
+        fetch('/api/sessions/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'แอดมิน (Admin)', type: 'admin' })
+        }).catch(err => console.debug('Heartbeat failed'));
+    };
+
+    sendPing();
+    setInterval(sendPing, 30000);
+})();
+
+// Load and display active sessions
+async function loadSessions() {
+    try {
+        const res = await fetch(`/api/admin/sessions?adminKey=${adminKey}`);
+        if (!res.ok) return;
+        const sessions = await res.json();
+        renderSessions(sessions);
+    } catch (e) {
+        console.error('Failed to load sessions:', e);
+    }
+}
+
+function renderSessions(sessions) {
+    const container = document.getElementById('sessionsList');
+    if (!container) return;
+
+    if (sessions.length === 0) {
+        container.innerHTML = '<div class="text-muted text-center py-2">ไม่มีใครเชื่อมต่ออยู่</div>';
+        return;
+    }
+
+    const typeLabel = { 'player': '📺 Player', 'admin': '⚙️ Admin', 'user': '👤 User' };
+    const typeColor = { 'player': '#00d4aa', 'admin': '#6366f1', 'user': '#ffffff' };
+
+    container.innerHTML = sessions.map(s => {
+        const lastSeenAgo = Math.floor((Date.now() - s.lastSeen) / 1000);
+        const lastSeenText = lastSeenAgo < 10 ? 'ออนไลน์' : `${lastSeenAgo} วิ ก่อน`;
+
+        return `
+            <div class="queue-item" style="border-left: 3px solid ${typeColor[s.type] || '#fff'};">
+                <div class="song-info">
+                    <div class="song-name" style="color: ${typeColor[s.type] || '#fff'};">${typeLabel[s.type] || s.type}</div>
+                    <div class="song-meta">
+                        <span>📍 ${escapeHtml(s.ip)}</span>
+                        <span style="margin-left: 10px;">👤 ${escapeHtml(s.name)}</span>
+                    </div>
+                </div>
+                <div class="queue-actions">
+                    <span class="badge" style="background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid #00ff88;">${lastSeenText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Refresh sessions every 10 seconds
+setInterval(loadSessions, 10000);

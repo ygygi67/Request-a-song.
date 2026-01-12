@@ -276,6 +276,331 @@
       "duration": 180,
       "isDuplicate": false,
       "playedAt": "2026-01-12T03:49:37.515Z"
+    },
+    {
+      "id": "1768192565462",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - Benz ดำ (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=QkiF57kn6RI",
+      "submittedAt": "2026-01-12T04:36:05.462Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "QkiF57kn6RI",
+        "title": "YOUNGOHM - Benz ดำ (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/QkiF57kn6RI/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/QkiF57kn6RI/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 170,
+        "url": "https://www.youtube.com/watch?v=QkiF57kn6RI"
+      },
+      "duration": 170,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:37:49.274Z"
+    },
+    {
+      "id": "1768192713139",
+      "name": "โมสต์",
+      "songName": "ฉันยังรักเธอ   เต้ย อภิวัฒน์ & Night Tingle Ft ยุ่งยิ่ง กนกนันทน์ [Official Music Video]",
+      "link": "https://www.youtube.com/watch?v=6HWAdY2i3nM",
+      "submittedAt": "2026-01-12T04:38:33.139Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "6HWAdY2i3nM",
+        "title": "ฉันยังรักเธอ   เต้ย อภิวัฒน์ & Night Tingle Ft ยุ่งยิ่ง กนกนันทน์ [Official Music Video]",
+        "author": "บรรจง",
+        "thumbnail": "https://img.youtube.com/vi/6HWAdY2i3nM/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/6HWAdY2i3nM/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 292,
+        "url": "https://www.youtube.com/watch?v=6HWAdY2i3nM"
+      },
+      "duration": 292,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:38:37.460Z"
+    },
+    {
+      "id": "1768189444857",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+      "link": "https://www.youtube.com/watch?v=puFt8Otb3Ao",
+      "submittedAt": "2026-01-12T03:44:04.857Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "puFt8Otb3Ao",
+        "title": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 310,
+        "url": "https://www.youtube.com/watch?v=puFt8Otb3Ao"
+      },
+      "duration": 310,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:40:04.707Z"
+    },
+    {
+      "id": "1768192862726",
+      "name": "โมสต์",
+      "songName": "ฉันยังรักเธอ   เต้ย อภิวัฒน์ & Night Tingle Ft ยุ่งยิ่ง กนกนันทน์ [Official Music Video]",
+      "link": "https://www.youtube.com/watch?v=6HWAdY2i3nM",
+      "submittedAt": "2026-01-12T04:41:02.726Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "6HWAdY2i3nM",
+        "title": "ฉันยังรักเธอ   เต้ย อภิวัฒน์ & Night Tingle Ft ยุ่งยิ่ง กนกนันทน์ [Official Music Video]",
+        "author": "บรรจง",
+        "thumbnail": "https://img.youtube.com/vi/6HWAdY2i3nM/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/6HWAdY2i3nM/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 292,
+        "url": "https://www.youtube.com/watch?v=6HWAdY2i3nM"
+      },
+      "duration": 292,
+      "isDuplicate": true,
+      "playedAt": "2026-01-12T04:45:52.922Z"
+    },
+    {
+      "id": "1768193197034",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "LIPTA : ยัง [Official Audio]",
+      "link": "https://www.youtube.com/watch?v=Shx40GyBuj4",
+      "submittedAt": "2026-01-12T04:46:37.034Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "Shx40GyBuj4",
+        "title": "LIPTA : ยัง [Official Audio]",
+        "author": "LOVEiS",
+        "thumbnail": "https://img.youtube.com/vi/Shx40GyBuj4/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/Shx40GyBuj4/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 283,
+        "url": "https://www.youtube.com/watch?v=Shx40GyBuj4"
+      },
+      "duration": 283,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:46:44.310Z"
+    },
+    {
+      "id": "1768193239526",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "BCH ส่งซิกงบ Q4 สวย อานิสงส์รายได้จากโรคตามฤดูกาล",
+      "link": "https://www.youtube.com/watch?v=VFUm2roVwyQ",
+      "submittedAt": "2026-01-12T04:47:19.526Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "VFUm2roVwyQ",
+        "title": "BCH ส่งซิกงบ Q4 สวย อานิสงส์รายได้จากโรคตามฤดูกาล",
+        "author": "Kaohoon TV Online - ข่าวหุ้นทีวีออนไลน์",
+        "thumbnail": "https://img.youtube.com/vi/VFUm2roVwyQ/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/VFUm2roVwyQ/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 570,
+        "url": "https://www.youtube.com/watch?v=VFUm2roVwyQ"
+      },
+      "duration": 570,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:47:30.266Z"
+    },
+    {
+      "id": "1768193020307",
+      "name": "โมสต์",
+      "songName": "P9d - Everyday",
+      "link": "https://www.youtube.com/watch?v=Fc-dbtAOzx8",
+      "submittedAt": "2026-01-12T04:43:40.307Z",
+      "votes": {
+        "up": 0,
+        "down": 1
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "Fc-dbtAOzx8",
+        "title": "P9d - Everyday",
+        "author": "p9d1",
+        "thumbnail": "https://img.youtube.com/vi/Fc-dbtAOzx8/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/Fc-dbtAOzx8/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 256,
+        "url": "https://www.youtube.com/watch?v=Fc-dbtAOzx8"
+      },
+      "duration": 256,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:50:13.663Z"
+    },
+    {
+      "id": "1768193488242",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "น้องอุ๋มอิ๋มตีกันหัวแตกเซอร์ไพส์วันดกิดพ่ออุ้มจ้า",
+      "link": "https://www.youtube.com/watch?v=AUVSM29muSk",
+      "submittedAt": "2026-01-12T04:51:28.242Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "AUVSM29muSk",
+        "title": "น้องอุ๋มอิ๋มตีกันหัวแตกเซอร์ไพส์วันดกิดพ่ออุ้มจ้า",
+        "author": "อุ๋มอิ๋ม นะจ๊ะ",
+        "thumbnail": "https://img.youtube.com/vi/AUVSM29muSk/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/AUVSM29muSk/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 156,
+        "url": "https://www.youtube.com/watch?v=AUVSM29muSk"
+      },
+      "duration": 156,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:51:37.989Z"
+    },
+    {
+      "id": "1768193482244",
+      "name": "โมสต์",
+      "songName": "#titerning #แอนิเมชั่น #การ์ตูน #ตลก #ภาษาไทย",
+      "link": "https://www.youtube.com/watch?v=z1-SZAYGFy8",
+      "submittedAt": "2026-01-12T04:51:22.244Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "z1-SZAYGFy8",
+        "title": "#titerning #แอนิเมชั่น #การ์ตูน #ตลก #ภาษาไทย",
+        "author": "Titerning",
+        "thumbnail": "https://img.youtube.com/vi/z1-SZAYGFy8/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/z1-SZAYGFy8/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 21,
+        "url": "https://www.youtube.com/watch?v=z1-SZAYGFy8"
+      },
+      "duration": 21,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:56:12.694Z"
+    },
+    {
+      "id": "1768193233597",
+      "name": "โมสต์",
+      "songName": "แก้บน - ก้านตอง ทุ่งเงิน【OFFICIAL MV】",
+      "link": "https://www.youtube.com/watch?v=hBK29bbOLS4",
+      "submittedAt": "2026-01-12T04:47:13.597Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "hBK29bbOLS4",
+        "title": "แก้บน - ก้านตอง ทุ่งเงิน【OFFICIAL MV】",
+        "author": "GRAMMY GOLD OFFICIAL",
+        "thumbnail": "https://img.youtube.com/vi/hBK29bbOLS4/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/hBK29bbOLS4/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 256,
+        "url": "https://www.youtube.com/watch?v=hBK29bbOLS4"
+      },
+      "duration": 256,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T04:58:38.904Z"
+    },
+    {
+      "id": "1768193233597",
+      "name": "โมสต์",
+      "songName": "แก้บน - ก้านตอง ทุ่งเงิน【OFFICIAL MV】",
+      "link": "https://www.youtube.com/watch?v=hBK29bbOLS4",
+      "submittedAt": "2026-01-12T04:47:13.597Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "hBK29bbOLS4",
+        "title": "แก้บน - ก้านตอง ทุ่งเงิน【OFFICIAL MV】",
+        "author": "GRAMMY GOLD OFFICIAL",
+        "thumbnail": "https://img.youtube.com/vi/hBK29bbOLS4/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/hBK29bbOLS4/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 256,
+        "url": "https://www.youtube.com/watch?v=hBK29bbOLS4"
+      },
+      "duration": 256,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T05:04:22.586Z"
+    },
+    {
+      "id": "1768194592131",
+      "name": "โมสต์",
+      "songName": "คุณค่าแห่งความตาย • คุณไอซ์ | 9 ส.ค. 68 | THE GHOST RADIO",
+      "link": "https://www.youtube.com/watch?v=bC2LQaaKuaU",
+      "submittedAt": "2026-01-12T05:09:52.131Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "bC2LQaaKuaU",
+        "title": "คุณค่าแห่งความตาย • คุณไอซ์ | 9 ส.ค. 68 | THE GHOST RADIO",
+        "author": "TheghostradioOfficial",
+        "thumbnail": "https://img.youtube.com/vi/bC2LQaaKuaU/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/bC2LQaaKuaU/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 2814,
+        "url": "https://www.youtube.com/watch?v=bC2LQaaKuaU"
+      },
+      "duration": 2814,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T05:10:16.402Z"
+    },
+    {
+      "id": "1768194634972",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "หฟร่กรฟห่ดหฟร555++อิอิ",
+      "link": "https://www.youtube.com/watch?v=LmtFK1BS3Sk",
+      "submittedAt": "2026-01-12T05:10:34.972Z",
+      "votes": {
+        "up": 0,
+        "down": 1
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "LmtFK1BS3Sk",
+        "title": "หฟร่กรฟห่ดหฟร555++อิอิ",
+        "author": "PEaCh",
+        "thumbnail": "https://img.youtube.com/vi/LmtFK1BS3Sk/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/LmtFK1BS3Sk/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 215,
+        "url": "https://www.youtube.com/watch?v=LmtFK1BS3Sk"
+      },
+      "duration": 215,
+      "isDuplicate": false,
+      "playedAt": "2026-01-12T05:11:46.950Z"
     }
   ]
 }

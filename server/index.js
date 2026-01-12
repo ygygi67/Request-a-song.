@@ -101,6 +101,16 @@ if (!cache.has('history')) {
     }
 }
 
+// Initialize sessions cache
+if (!cache.has('sessions')) {
+    cache.set('sessions', {}); // Key: IP, Value: { name, lastSeen, type }
+}
+
+// Initialize rejected songs list
+if (!cache.has('rejected')) {
+    cache.set('rejected', []); // Array of { song, rejectedAt }
+}
+
 function saveHistory(history) {
     try {
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
@@ -269,6 +279,14 @@ app.post('/api/songs', async (req, res) => {
         }
 
         // Check for duplicate song (only current queue and today's history)
+        // Save session name association
+        const sessions = cache.get('sessions') || {};
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        if (sessions[ip]) {
+            sessions[ip].name = name;
+            cache.set('sessions', sessions);
+        }
+
         const songs = cache.get('songs') || [];
         const history = cache.get('history') || {};
         const todayAt = new Date().toISOString().split('T')[0];
@@ -429,11 +447,109 @@ app.delete('/api/songs/:id', (req, res) => {
     cache.set('history', history);
     saveHistory(history);
 
+    // Add to rejected list (keep last 20 for display)
+    const rejected = cache.get('rejected') || [];
+    rejected.unshift({
+        ...rejectedSong,
+        rejectedAt: new Date().toISOString()
+    });
+    if (rejected.length > 20) rejected.pop(); // Limit to 20 items
+    cache.set('rejected', rejected);
+
     songs.splice(songIndex, 1);
     cache.set('songs', songs);
     saveQueue(); // Persist queue
 
     res.json({ message: 'Song rejected', song: rejectedSong });
+});
+
+// Get rejected songs (public)
+app.get('/api/rejected', (req, res) => {
+    const rejected = cache.get('rejected') || [];
+    res.json(rejected);
+});
+
+// Vote on a song (public)
+app.post('/api/songs/:id/vote', (req, res) => {
+    const { id } = req.params;
+    const { type, previousVote } = req.body; // type: 'up' or 'down'
+
+    if (!['up', 'down'].includes(type)) {
+        return res.status(400).json({ error: 'Invalid vote type' });
+    }
+
+    let songs = cache.get('songs') || [];
+    const songIndex = songs.findIndex(s => s.id === id);
+
+    if (songIndex === -1) {
+        return res.status(404).json({ error: 'Song not found' });
+    }
+
+    // Initialize votes if not present
+    if (!songs[songIndex].votes) {
+        songs[songIndex].votes = { up: 0, down: 0 };
+    }
+
+    // Handle vote change - remove previous vote
+    if (previousVote && ['up', 'down'].includes(previousVote)) {
+        songs[songIndex].votes[previousVote] = Math.max(0, songs[songIndex].votes[previousVote] - 1);
+    }
+
+    // Add new vote
+    songs[songIndex].votes[type]++;
+    cache.set('songs', songs);
+    saveQueue();
+
+    let autoAction = null;
+
+    // Auto-reject if 10+ downvotes
+    if (songs[songIndex].votes.down >= 10) {
+        const rejectedSong = songs[songIndex];
+        rejectedSong.status = 'rejected';
+        rejectedSong.rejectedAt = new Date().toISOString();
+        rejectedSong.rejectedReason = 'auto_downvotes';
+
+        // Add to rejected list
+        const rejected = cache.get('rejected') || [];
+        rejected.unshift(rejectedSong);
+        if (rejected.length > 20) rejected.pop();
+        cache.set('rejected', rejected);
+
+        // Add to history
+        const history = cache.get('history') || {};
+        const todayAt = new Date().toISOString().split('T')[0];
+        if (!history[todayAt]) history[todayAt] = [];
+        history[todayAt].push({
+            ...rejectedSong,
+            status: 'rejected',
+            playedAt: new Date().toISOString()
+        });
+        cache.set('history', history);
+        saveHistory(history);
+
+        // Remove from queue
+        songs.splice(songIndex, 1);
+        cache.set('songs', songs);
+        saveQueue();
+
+        autoAction = 'rejected';
+    }
+    // Auto-prioritize if 15+ upvotes
+    else if (songs[songIndex].votes.up >= 15 && songIndex > 0) {
+        const targetSong = songs[songIndex];
+        songs.splice(songIndex, 1);
+        songs.unshift(targetSong);
+        cache.set('songs', songs);
+        saveQueue();
+
+        autoAction = 'prioritized';
+    }
+
+    res.json({
+        message: 'Vote recorded',
+        votes: songs[songIndex]?.votes || { up: 0, down: 0 },
+        autoAction
+    });
 });
 
 // Prioritize song (admin) - move to top of queue
@@ -881,4 +997,47 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// ==================== Session Tracking Routes ====================
+
+// Heartbeat (Ping) from clients
+app.post('/api/sessions/ping', (req, res) => {
+    const { name, type } = req.body; // type: 'user', 'player', 'admin'
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const sessions = cache.get('sessions') || {};
+
+    const cleanIp = String(ip).replace('::ffff:', ''); // Clean IPv6 prefix
+
+    sessions[cleanIp] = {
+        name: name || sessions[cleanIp]?.name || 'ผู้ใช้ไม่ระบุชื่อ',
+        lastSeen: Date.now(),
+        type: type || 'user',
+        ip: cleanIp
+    };
+
+    cache.set('sessions', sessions);
+    res.json({ status: 'ok' });
+});
+
+// Get active sessions (admin)
+app.get('/api/admin/sessions', (req, res) => {
+    const { adminKey } = req.query;
+    if (adminKey !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const sessions = cache.get('sessions') || {};
+    const now = Date.now();
+    const activeThreshold = 60 * 1000; // 60 seconds
+
+    // Filter active sessions and sort: Player/Admin first, then Users
+    const activeSessions = Object.values(sessions)
+        .filter(s => now - s.lastSeen < activeThreshold)
+        .sort((a, b) => {
+            const priority = { 'player': 1, 'admin': 2, 'user': 3 };
+            return (priority[a.type] || 99) - (priority[b.type] || 99);
+        });
+
+    res.json(activeSessions);
 });
