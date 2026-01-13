@@ -1,931 +1,789 @@
-// ===== Admin State =====
-let adminKey = localStorage.getItem('adminKey') || null;
-let isPlaying = false;
-let isDraggingSeekBar = false; // Prevent slider snapping while dragging
-let currentSong = null;
-let updateInterval = null;
-let adminQueueIds = new Set(); // Track seen songs to avoid re-animating
-let isOffline = false;
+// Minimal recovered admin.js to restore functionality
+// Features: lyrics modal + next line, party toggle, volume sync, 401 auto-logout
+(function(){
+  'use strict';
 
-// ===== Connection Monitoring =====
-function updateConnectionStatus() {
-    const warning = document.getElementById('connectionWarning');
-    if (!warning) return;
+  const getAdminKey = () => (window.adminKey || localStorage.getItem('adminKey') || '').trim();
 
-    if (!navigator.onLine) {
-        warning.textContent = '❌ อินเทอร์เน็ตขาดการเชื่อมต่อ - กรุณาตรวจสอบเน็ตของคุณ';
-        warning.classList.add('active');
-        isOffline = true;
-    } else if (isOffline) {
-        warning.textContent = '⚠️ กำลังพยายามจัดตั้งการเชื่อมต่อกับเซิร์ฟเวอร์ใหม่...';
-    }
-}
-
-window.addEventListener('online', updateConnectionStatus);
-window.addEventListener('offline', updateConnectionStatus);
-
-function setConnectionError(active, message) {
-    const warning = document.getElementById('connectionWarning');
-    if (!warning) return;
-
-    if (active) {
-        if (message) warning.textContent = message;
-        warning.classList.add('active');
-    } else {
-        warning.classList.remove('active');
-        isOffline = false;
-    }
-}
-
-// ===== DOM Elements =====
-const loginScreen = document.getElementById('loginScreen');
-const adminDashboard = document.getElementById('adminDashboard');
-const loginForm = document.getElementById('loginForm');
-const loginError = document.getElementById('loginError');
-
-// ===== Initialize =====
-document.addEventListener('DOMContentLoaded', async () => {
-    if (adminKey) {
-        const isValid = await validateSession();
-        if (isValid) {
-            showDashboard();
-        } else {
-            logout();
-        }
-    }
-
-    loginForm.addEventListener('submit', handleLogin);
-
-    const seekBar = document.getElementById('seekBar');
-    if (seekBar) {
-        seekBar.addEventListener('mousedown', () => isDraggingSeekBar = true);
-        seekBar.addEventListener('touchstart', () => isDraggingSeekBar = true);
-        seekBar.addEventListener('mouseup', () => isDraggingSeekBar = false);
-        seekBar.addEventListener('touchend', () => isDraggingSeekBar = false);
-    }
-
-    detectOnlineMode();
-});
-
-// Detect if running on Online Tunnel
-function detectOnlineMode() {
-    const host = window.location.hostname;
-    if (host.includes('localtunnel.me') || host.includes('lt.dev')) {
-        const dashboard = document.querySelector('.admin-container') || document.body;
-        const badge = document.createElement('div');
-        badge.style.position = 'fixed';
-        badge.style.top = '10px';
-        badge.style.right = '10px';
-        badge.style.background = 'rgba(0, 255, 136, 0.15)';
-        badge.style.color = '#00ff88';
-        badge.style.border = '1px solid #00ff88';
-        badge.style.padding = '4px 12px';
-        badge.style.borderRadius = '50px';
-        badge.style.fontSize = '0.75rem';
-        badge.style.fontWeight = 'bold';
-        badge.style.zIndex = '9999';
-        badge.innerHTML = '🌐 Online Mode';
-        dashboard.appendChild(badge);
-    }
-}
-
-async function validateSession() {
+  function showToast(message, type = 'info') {
     try {
-        const response = await fetch('/api/playback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, action: 'check' })
-        });
-        return response.status !== 401;
-    } catch (e) { return false; }
-}
+      const container = document.getElementById('toastContainer');
+      if (!container) return console.log(`[Toast:${type}]`, message);
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 2000);
+    } catch (e) { console.log(`[Toast:${type}]`, message); }
+  }
 
-// ===== Login =====
-async function handleLogin(e) {
-    e.preventDefault();
-
-    const password = document.getElementById('passwordInput').value;
-
-    try {
-        const response = await fetch('/api/admin/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            adminKey = data.adminKey;
-            localStorage.setItem('adminKey', adminKey);
-            showDashboard();
-        } else {
-            loginError.textContent = data.error || 'รหัสผ่านไม่ถูกต้อง';
-        }
-    } catch (error) {
-        loginError.textContent = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+  function handleUnauthorized(res){
+    if (res && res.status === 401){
+      showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'error');
+      setTimeout(() => { try { localStorage.removeItem('adminKey'); location.href = '/admin.html'; } catch(_){} }, 1200);
+      return true;
     }
-}
+    return false;
+  }
 
-function logout() {
-    adminKey = null;
-    localStorage.removeItem('adminKey');
-    loginScreen.classList.remove('hidden');
-    adminDashboard.classList.add('hidden');
-    if (updateInterval) clearInterval(updateInterval);
-}
-
-function showDashboard() {
-    loginScreen.classList.add('hidden');
-    adminDashboard.classList.remove('hidden');
-    loadData();
-
-    // Auto refresh every 5 seconds
-    updateInterval = setInterval(loadData, 5000);
-}
-
-// ===== Load Data =====
-async function loadData() {
-    const dot = document.getElementById('updateDot');
-    const text = document.getElementById('updateText');
-
-    if (dot) dot.classList.add('updating');
-    if (text) text.textContent = 'กำลังซิงก์ข้อมูล...';
-
-    try {
-        await Promise.all([
-            loadQueue(),
-            loadCurrentSong(),
-            loadStats(),
-            loadSessions()
-        ]);
-        setConnectionError(false);
-        if (text) text.textContent = 'ซิงก์ข้อมูลล่าสุด: ' + new Date().toLocaleTimeString();
-    } catch (e) {
-        console.error('Refresh error:', e);
-        setConnectionError(true, '⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กำลังลองใหม่...');
-        if (text) text.textContent = 'การซิงก์ขัดข้อง จะลองใหม่ใน 5 วิ';
-    } finally {
-        if (dot) dot.classList.remove('updating');
-    }
-}
-
-async function loadQueue() {
-    try {
-        const response = await fetch('/api/songs');
-        const songs = await response.json();
-
-        // Update basic queue stats
-        document.getElementById('statQueue').textContent = songs.length;
-
-        renderAdminQueue(songs);
-    } catch (error) {
-        console.error('Error loading queue:', error);
-    }
-}
-
-async function loadCurrentSong() {
-    try {
-        const response = await fetch('/api/songs/current');
-        const data = await response.json();
-
-        currentSong = data.current;
-        isPlaying = data.isPlaying;
-
-        updateNowPlaying(data);
-        updateNextSong(data.nextSong);
-
-        // Update stats from server
-        if (data.stats) {
-            const todayCountEl = document.getElementById('statToday');
-            const totalPlayedEl = document.getElementById('statTotalPlayed');
-            if (todayCountEl) todayCountEl.textContent = data.stats.todayCount || 0;
-            if (totalPlayedEl) totalPlayedEl.textContent = data.stats.totalPlayed || 0;
-        }
-
-        // Sync Lyrics Mode UI
-        const lyricsToggle = document.getElementById('lyricsToggle');
-        const lyricsInput = document.getElementById('lyricsInput');
-        if (lyricsToggle && data.playbackState) {
-            lyricsToggle.checked = data.playbackState.lyricsMode;
-        }
-        if (lyricsInput && data.playbackState && !lyricsInput.matches(':focus')) {
-            lyricsInput.value = data.playbackState.currentLyrics || '';
-        }
-    } catch (error) {
-        console.error('Error loading current song:', error);
-    }
-}
-
-// ===== Update UI =====
-function updateNowPlaying(data) {
-    const song = data.current;
-    const playBtn = document.getElementById('playBtn');
-    const repeatBtn = document.getElementById('repeatBtn');
-    const seekBar = document.getElementById('seekBar');
-
-    if (song) {
-        const info = song.videoInfo || {};
-        const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='15'%3E🎵%3C/text%3E%3C/svg%3E";
-        document.getElementById('npThumbnail').src = info.thumbnail || info.thumbnailMedium || placeholder;
-        document.getElementById('npTitle').textContent = song.songName;
-        document.getElementById('npArtist').textContent = info.author || song.name || '-';
-
-        const duration = song.duration || 180;
-        const currentTime = data.currentTime || 0;
-        const progress = (currentTime / duration) * 100;
-
-        document.getElementById('npProgress').style.width = progress + '%';
-        document.getElementById('npCurrentTime').textContent = formatDuration(currentTime);
-        document.getElementById('npDuration').textContent = formatDuration(duration);
-
-        if (seekBar && !isDraggingSeekBar) {
-            seekBar.value = progress;
-            seekBar.disabled = false;
-        }
-    } else {
-        const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='15'%3E🎵%3C/text%3E%3C/svg%3E";
-        document.getElementById('npThumbnail').src = placeholder;
-        document.getElementById('npTitle').textContent = 'ไม่มีเพลงที่เล่น';
-        document.getElementById('npArtist').textContent = '-';
-        document.getElementById('npProgress').style.width = '0%';
-        document.getElementById('npCurrentTime').textContent = '0:00';
-        document.getElementById('npDuration').textContent = '0:00';
-
-        if (seekBar) {
-            seekBar.value = 0;
-            seekBar.disabled = true;
-        }
-    }
-
-    if (playBtn) playBtn.textContent = data.isPlaying ? '⏸️' : '▶️';
-    if (repeatBtn) {
-        if (data.isRepeat) {
-            repeatBtn.classList.add('active');
-            repeatBtn.title = 'ปิดโหมดวนซ้ำ';
-        } else {
-            repeatBtn.classList.remove('active');
-            repeatBtn.title = 'เปิดโหมดวนซ้ำ';
-        }
-    }
-}
-
-function updateNextSong(song) {
-    const nextActions = document.getElementById('nextActions');
-    const rejectNextBtn = document.getElementById('rejectNextBtn');
-
-    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='100' fill='%236366f1' text-anchor='middle' dy='35'%3E🎵%3C/text%3E%3C/svg%3E";
-
-    if (song) {
-        const info = song.videoInfo || {};
-        const thumbnail = info.thumbnailMedium || info.thumbnail || placeholder;
-
-        const imgEl = document.getElementById('nextThumbnail');
-        imgEl.src = thumbnail;
-        imgEl.onerror = function () { this.src = placeholder; };
-
-        document.getElementById('nextTitle').textContent = song.songName;
-        document.getElementById('nextArtist').textContent = info.author || song.name || '-';
-
-        if (nextActions) nextActions.style.display = 'block';
-        if (rejectNextBtn) {
-            rejectNextBtn.onclick = () => rejectSong(song.id);
-        }
-    } else {
-        document.getElementById('nextThumbnail').src = placeholder;
-        document.getElementById('nextTitle').textContent = 'ไม่มีเพลงถัดไป';
-        document.getElementById('nextArtist').textContent = '-';
-
-        if (nextActions) nextActions.style.display = 'none';
-    }
-}
-
-function renderAdminQueue(songs) {
-    const container = document.getElementById('adminQueueList');
-    const emptyEl = document.getElementById('adminEmptyQueue');
-
-    if (!container) return;
-
-    if (!songs || songs.length === 0) {
-        container.innerHTML = '';
-        if (emptyEl) {
-            emptyEl.style.display = 'block';
-            container.appendChild(emptyEl);
-        }
-        return;
-    }
-
-    if (emptyEl) emptyEl.style.display = 'none';
-
-    // Track current IDs to detect new items
-    const currentIds = new Set(songs.map(s => s.id));
-
-    container.innerHTML = songs.map((song, index) => {
-        const info = song.videoInfo || {};
-        const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='15'%3E🎵%3C/text%3E%3C/svg%3E";
-        const thumbnail = info.thumbnailMedium || info.thumbnail || placeholder;
-
-        // Apply animate-in only if ID is new
-        const isNew = !adminQueueIds.has(song.id);
-        const animationClass = isNew ? 'animate-in' : '';
-
-        return `
-            <div class="queue-item ${animationClass} ${song.isDuplicate ? 'duplicate' : ''}" data-id="${song.id}">
-                <div class="queue-number">${song.queueNumber}</div>
-                <img src="${thumbnail}" alt="" class="queue-thumbnail" onerror="this.src='${placeholder}'">
-                <div class="queue-info">
-                    <div class="queue-title">
-                        ${song.link ? `<a href="${song.link}" target="_blank">${escapeHtml(song.songName)}</a>` : escapeHtml(song.songName)}
-                        ${song.isDuplicate ? '<span class="badge badge-duplicate">ซ้ำ</span>' : ''}
-                    </div>
-                    <div class="queue-meta">
-                        ${info.author ? `<span>🎤 ${escapeHtml(info.author)}</span>` : ''}
-                        <span>👤 ${escapeHtml(song.name)}</span>
-                        <span>👍 ${song.votes.up} / 👎 ${song.votes.down}</span>
-                    </div>
-                </div>
-                <div class="queue-actions">
-                    <button class="btn btn-primary btn-sm" onclick="prioritizeSong('${song.id}')" title="ลัดคิวเป็นลำดับแรก">
-                        ⭐ ลัดคิว
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('${song.id}', '${escapeHtml(song.link || '')}')" title="แก้ไขลิงก์">
-                        🔗 แก้ไข
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="rejectSong('${song.id}')" title="ปฏิเสธ">
-                        ❌ ปฏิเสธ
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // Update the tracker
-    adminQueueIds = currentIds;
-}
-
-// ===== Playback Controls =====
-async function togglePlay() {
-    try {
-        const action = isPlaying ? 'pause' : 'play';
-
-        const response = await fetch('/api/playback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, action })
-        });
-
-        if (response.status === 401) {
-            showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'error');
-            setTimeout(logout, 2000);
-            return;
-        }
-
-        if (response.ok) {
-            loadCurrentSong();
-            loadQueue();
-            showToast(action === 'play' ? '▶️ กำลังเล่น' : '⏸️ หยุดชั่วคราว', 'success');
-        } else {
-            showToast('เกิดข้อผิดพลาด', 'error');
-        }
-    } catch (error) {
-        console.error('Playback error:', error);
-        showToast('เกิดข้อผิดพลาด', 'error');
-    }
-}
-
-async function skipSong() {
-    try {
-        const response = await fetch('/api/songs/skip', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey })
-        });
-
-        if (response.status === 401) {
-            showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'error');
-            setTimeout(logout, 2000);
-            return;
-        }
-
-        if (response.ok) {
-            loadCurrentSong();
-            loadQueue();
-            showToast('⏭️ ข้ามไปเพลงถัดไป', 'success');
-        } else {
-            showToast('เกิดข้อผิดพลาด', 'error');
-        }
-    } catch (error) {
-        console.error('Skip error:', error);
-        showToast('เกิดข้อผิดพลาด', 'error');
-    }
-}
-
-async function stopPlayback() {
-    try {
-        const response = await fetch('/api/playback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, action: 'pause' })
-        });
-
-        if (response.ok) {
-            loadCurrentSong();
-            loadQueue();
-            showToast('⏹️ หยุดเล่น', 'success');
-        }
-    } catch (error) {
-        console.error('Stop error:', error);
-    }
-}
-
-async function handleSeek(percent) {
-    if (!currentSong) return;
-    const duration = currentSong.duration || 180;
-    const seekTime = (percent / 100) * duration;
-
-    try {
-        const response = await fetch('/api/playback/seek', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, time: seekTime })
-        });
-
-        if (response.ok) {
-            loadCurrentSong();
-            showToast(`⏭️ เลื่อนไปที่ ${formatDuration(seekTime)}`, 'success');
-        }
-    } catch (e) { console.error('Seek error:', e); }
-}
-
-async function adjustTime(delta) {
-    if (!currentSong) return;
-
-    try {
-        // First get current fresh time from server
-        const statusRes = await fetch('/api/songs/current');
-        const status = await statusRes.json();
-
-        const duration = currentSong.duration || 180;
-        let newTime = (status.currentTime || 0) + delta;
-        newTime = Math.max(0, Math.min(newTime, duration - 1));
-
-        const response = await fetch('/api/playback/seek', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, time: newTime })
-        });
-
-        if (response.ok) {
-            loadCurrentSong();
-            showToast(delta > 0 ? `⏩ ไปข้างหน้า ${delta} วิ` : `⏪ ย้อนกลับ ${Math.abs(delta)} วิ`, 'success');
-        }
-    } catch (e) { console.error('Adjust time error:', e); }
-}
-
-async function toggleCinema() {
-    try {
-        const response = await fetch('/api/admin/cinema', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            showToast(data.cinemaMode ? '🖵 เปิดโหมดโรงหนัง' : 'ออกจากโหมดโรงหนัง', 'success');
-        } else {
-            showToast('เกิดข้อผิดพลาดในการเปลี่ยนโหมด', 'error');
-        }
-    } catch (e) {
-        console.error('Toggle cinema error:', e);
-        showToast('เกิดข้อผิดพลาด', 'error');
-    }
-}
-
-async function toggleLyricsMode(enabled) {
-    try {
-        const lyrics = document.getElementById('lyricsInput').value;
-        const response = await fetch('/api/admin/lyrics', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, enabled, lyrics })
-        });
-        if (response.ok) {
-            showToast(enabled ? '📝 เปิดโหมดเนื้อเพลง' : '📋 กลับสู่โหมดคิวเพลง', 'success');
-        }
-    } catch (e) { console.error('Lyrics error:', e); }
-}
-
-async function updateLyrics(lyrics) {
-    try {
-        const enabled = document.getElementById('lyricsToggle').checked;
-        await fetch('/api/admin/lyrics', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, enabled, lyrics })
-        });
-    } catch (e) { console.error('Update lyrics error:', e); }
-}
-
-async function toggleRepeat() {
-    const repeatBtn = document.getElementById('repeatBtn');
-    const currentlyEnabled = repeatBtn.classList.contains('active');
-
-    try {
-        const response = await fetch('/api/playback/repeat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, enabled: !currentlyEnabled })
-        });
-
-        if (response.ok) {
-            loadCurrentSong();
-            showToast(!currentlyEnabled ? '🔁 เปิดโหมดวนซ้ำ' : '➡️ ปิดโหมดวนซ้ำ', 'success');
-        }
-    } catch (e) { console.error('Repeat error:', e); }
-}
-
-let volumeDebounceTimer;
-async function adjustVolume(value) {
-    document.getElementById('volumeValue').innerText = `${value}%`;
+  // ===== Volume =====
+  let volumeDebounceTimer;
+  window.adjustVolume = function(value){
+    const v = Math.max(0, Math.min(100, parseInt(value,10) || 0));
+    const volumeValueEl = document.getElementById('volumeValue');
+    if (volumeValueEl) volumeValueEl.innerText = `${v}%`;
+    const slider = document.getElementById('adminVolumeSlider');
+    if (slider && slider.value !== String(v)) slider.value = String(v);
+    const numberInput = document.getElementById('adminVolumeNumber');
+    if (numberInput && numberInput.value !== String(v)) numberInput.value = String(v);
 
     clearTimeout(volumeDebounceTimer);
-    volumeDebounceTimer = setTimeout(async () => {
-        try {
-            await fetch('/api/admin/volume', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ adminKey, volume: parseInt(value) })
-            });
-        } catch (e) { console.error('Volume error:', e); }
-    }, 500); // Debounce sending to server
-}
-
-// ===== Reject Song =====
-async function rejectSong(songId) {
-    if (!confirm('ต้องการปฏิเสธเพลงนี้หรือไม่?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/songs/${songId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey })
+    volumeDebounceTimer = setTimeout(async ()=>{
+      const key = getAdminKey();
+      if (!key) return; // Do not call server before login
+      try{
+        const res = await fetch('/api/admin/volume',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ adminKey: key, volume: v })
         });
+        if (handleUnauthorized(res)) return;
+      }catch(e){ console.error('Volume error:', e); }
+    }, 400);
+  };
 
-        if (response.status === 401) {
-            showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่', 'error');
-            setTimeout(logout, 2000);
-            return;
-        }
+  // Reject a specific song from queue list
+  window.rejectSong = async function(songId){
+    if (!songId) return;
+    if (!confirm('ต้องการปฏิเสธเพลงนี้หรือไม่?')) return;
+    try{
+      const res = await fetch(`/api/songs/${encodeURIComponent(songId)}`,{
+        method:'DELETE', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast('❌ ปฏิเสธเพลงแล้ว','success');
+        loadQueue();
+        loadCurrentSong();
+      } else {
+        const data = await res.json().catch(()=>({}));
+        showToast(data.error || 'ปฏิเสธไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('rejectSong error:', e); }
+  };
 
-        if (response.ok) {
-            loadData();
-            showToast('❌ ปฏิเสธเพลงเรียบร้อย', 'success');
-        } else {
-            const data = await response.json();
-            showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
-        }
-    } catch (error) {
-        console.error('Reject error:', error);
-        showToast('เกิดข้อผิดพลาด', 'error');
+  // Toggle Cinema Mode (expand player on Player UI)
+  window.toggleCinema = async function(){
+    const key = getAdminKey(); if (!key) return;
+    try{
+      const res = await fetch('/api/admin/cinema', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast('🖵 สลับโหมดโรงหนังแล้ว','success');
+        // fun pulse on button
+        const buttons = Array.from(document.querySelectorAll('.player-controls button'));
+        const btn = buttons.find(b => (b.title && b.title.includes('โหมดโรงหนัง')) || (b.textContent && b.textContent.includes('🖵')));
+        if (btn){ btn.classList.add('party-pulse'); setTimeout(()=>btn.classList.remove('party-pulse'), 820); }
+      } else {
+        showToast('สลับโหมดโรงหนังไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('toggleCinema error:', e); }
+  };
+
+  // ===== Party Mode =====
+  window.togglePartyMode = async function(){
+    try{
+      const res = await fetch('/api/admin/party',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok) {
+        showToast('🎉 สลับโหมดปาร์ตี้แล้ว','success');
+        // Party FX for fun
+        ensurePartyFxStyles();
+        partyFlash();
+        partyPulseButton();
+        partyConfettiBurst();
+      } else {
+        showToast('สลับโหมดปาร์ตี้ไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('Party error:', e); }
+  };
+
+  // ===== Party FX (Confetti / Pulse / Flash) =====
+  function ensurePartyFxStyles(){
+    if (document.getElementById('partyFxStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'partyFxStyles';
+    style.textContent = `
+      @keyframes party-pop { from { transform: translate(0,0) scale(0.8); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); opacity: 0; } }
+      @keyframes party-flash { from { opacity: 0.5; } to { opacity: 0; } }
+      @keyframes party-pulse { 0%{ transform: scale(1);} 50%{ transform: scale(1.12);} 100%{ transform: scale(1);} }
+      .party-confetti { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 6000; }
+      .party-piece { position: absolute; width: 10px; height: 10px; border-radius: 2px; animation: party-pop 900ms ease-out forwards; }
+      .party-flash { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(255,255,255,0.6), rgba(255,255,255,0)); animation: party-flash 600ms ease-out forwards; pointer-events: none; z-index: 5500; }
+      .party-pulse { animation: party-pulse 800ms ease-in-out; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function getPartyButton(){
+    const buttons = Array.from(document.querySelectorAll('.player-controls button'));
+    return buttons.find(b => (b.title && b.title.includes('ปาร์ตี้')) || (b.textContent && b.textContent.includes('🎉')));
+  }
+
+  function partyPulseButton(){
+    const btn = getPartyButton();
+    if (!btn) return;
+    btn.classList.add('party-pulse');
+    setTimeout(()=> btn.classList.remove('party-pulse'), 820);
+  }
+
+  function partyFlash(){
+    const flash = document.createElement('div');
+    flash.className = 'party-flash';
+    document.body.appendChild(flash);
+    setTimeout(()=> flash.remove(), 650);
+  }
+
+  function partyConfettiBurst(){
+    const btn = getPartyButton();
+    const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth/2, top: 80, width: 40, height: 40 };
+    const originX = rect.left + rect.width/2;
+    const originY = rect.top + rect.height/2;
+
+    const container = document.createElement('div');
+    container.className = 'party-confetti';
+    document.body.appendChild(container);
+
+    const colors = ['#ff4d4d','#ffd93d','#36fba1','#4da3ff','#b76cff','#ff8ad4'];
+    const pieces = 36;
+    for (let i=0; i<pieces; i++){
+      const piece = document.createElement('span');
+      piece.className = 'party-piece';
+      const angle = (Math.PI * 2) * (i/pieces) + (Math.random()*0.5-0.25);
+      const distance = 80 + Math.random()*120;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      piece.style.setProperty('--dx', `${dx}px`);
+      piece.style.setProperty('--dy', `${dy}px`);
+      piece.style.setProperty('--rot', `${(Math.random()*720-360)}deg`);
+      piece.style.left = `${originX}px`;
+      piece.style.top = `${originY}px`;
+      piece.style.background = colors[i % colors.length];
+      container.appendChild(piece);
     }
-}
+    setTimeout(()=> container.remove(), 1100);
+  }
 
-// ===== Utilities =====
-function formatDuration(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
+  // ===== Lyrics =====
+  function ensureLyricsModal(){
+    if (document.getElementById('lyricsModal')) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'lyricsModal';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3>📝 ใส่เนื้อเพลง</h3>
+          <button class="modal-close" onclick="closeLyricsModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>วาง/พิมพ์เนื้อเพลงที่นี่ (แต่ละบรรทัดเป็น 1 ท่อน)</label>
+            <textarea id="lyricsTextarea" rows="10" style="width:100%; padding:10px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeLyricsModal()">ยกเลิก</button>
+          <button class="btn btn-primary" onclick="saveLyrics()">บันทึก</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+  window.openLyricsModal = function(){ ensureLyricsModal(); const m = document.getElementById('lyricsModal'); if (m) m.classList.add('active'); };
+  window.closeLyricsModal = function(){ const m = document.getElementById('lyricsModal'); if (m) m.classList.remove('active'); };
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    if (!container) {
-        console.warn('Toast container not found:', message);
-        return;
-    }
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    container.appendChild(toast);
+  window.saveLyrics = async function(){
+    const lyrics = (document.getElementById('lyricsTextarea')?.value || '').trim();
+    try{
+      const res = await fetch('/api/admin/lyrics',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey(), lyrics, enabled: true })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){ showToast('📝 บันทึกเนื้อเพลงแล้ว','success'); closeLyricsModal(); }
+      else showToast('บันทึกเนื้อเพลงไม่สำเร็จ','error');
+    }catch(e){ console.error('Save lyrics error:', e); showToast('บันทึกเนื้อเพลงไม่สำเร็จ','error'); }
+  };
 
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+  window.nextLyricsLine = async function(){
+    try{
+      const res = await fetch('/api/admin/lyrics/next',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok) showToast('เลื่อนไปท่อนถัดไปแล้ว','success');
+      else showToast('ไม่สามารถไปท่อนถัดไปได้','error');
+    }catch(e){ console.error('Next lyric error:', e); }
+  };
 
-// ===== Edit Link Modal Logic =====
-let currentEditId = null;
+  window.toggleLyricsMode = async function(){
+    try{
+      const res = await fetch('/api/admin/lyrics',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok) showToast('สลับโหมดเนื้อเพลงแล้ว','success');
+      else showToast('สลับโหมดเนื้อเพลงไม่สำเร็จ','error');
+    }catch(e){ console.error('Lyrics toggle error:', e); }
+  };
 
-function openEditModal(id, currentLink) {
-    currentEditId = id;
-    document.getElementById('newLinkInput').value = currentLink;
-    document.getElementById('editModal').classList.add('show');
-    document.getElementById('editError').textContent = '';
-}
+  function ensureLyricsButtons(){
+    try{
+      const controls = Array.from(document.querySelectorAll('.player-controls'));
+      const target = controls.find(c => c.querySelector('button[onclick="toggleLyricsMode()"]'));
+      if (!target) return false;
+      if (!document.getElementById('btnLyricsInput')){
+        const b = document.createElement('button'); b.id='btnLyricsInput'; b.className='btn btn-icon btn-secondary'; b.title='ใส่เนื้อเพลงเอง'; b.textContent='🖊️'; b.onclick = window.openLyricsModal; target.insertBefore(b, target.firstChild.nextSibling);
+      }
+      if (!document.getElementById('btnLyricsNext')){
+        const b = document.createElement('button'); b.id='btnLyricsNext'; b.className='btn btn-icon btn-secondary'; b.title='ไปท่อน/บรรทัดถัดไปของเนื้อเพลง'; b.textContent='⏭️📝'; b.onclick = window.nextLyricsLine; target.insertBefore(b, target.firstChild.nextSibling);
+      }
+      ensureLyricsModal();
+      return true;
+    }catch(e){ return false; }
+  }
 
-function closeEditModal() {
-    document.getElementById('editModal').classList.remove('show');
-    currentEditId = null;
-}
+  // ===== Queue Rendering (minimal) =====
+  function escapeHtml(str){
+    return String(str || '')
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
 
-async function saveSongLink() {
-    const newLink = document.getElementById('newLinkInput').value.trim();
-    if (!newLink) {
-        document.getElementById('editError').textContent = 'กรุณากรอกลิงก์';
-        return;
-    }
+  async function loadQueue(){
+    try{
+      const res = await fetch('/api/songs');
+      const songs = await res.json();
+      renderAdminQueue(Array.isArray(songs) ? songs : (songs.queue || []));
+      const statQueue = document.getElementById('statQueue');
+      if (statQueue) statQueue.textContent = (Array.isArray(songs) ? songs.length : (songs.queue||[]).length) || 0;
+      // Update announcement text based on the next song in queue
+      updateAnnouncementFromSongs(Array.isArray(songs) ? songs : (songs.queue || []));
+    }catch(e){ console.error('Error loading queue:', e); }
+  }
 
-    const saveBtn = document.getElementById('saveLinkBtn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'กำลังบันทึก...';
-
-    try {
-        const response = await fetch(`/api/songs/${currentEditId}/link`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey, link: newLink })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            closeEditModal();
-            loadCurrentSong();
-            loadQueue();
-            showToast('✅ อัปเดตลิงก์เรียบร้อยแล้ว', 'success');
-        } else {
-            document.getElementById('editError').textContent = data.error || 'เกิดข้อผิดพลาด';
-        }
-    } catch (error) {
-        document.getElementById('editError').textContent = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
-    } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'บันทึก';
-    }
-}
-
-// ===== Prioritize Song =====
-async function prioritizeSong(songId) {
-    try {
-        const response = await fetch(`/api/songs/${songId}/priority`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminKey })
-        });
-
-        if (response.ok) {
-            loadData();
-            showToast('⭐ ลัดคิวเพลงนี้ขึ้นมาเป็นลำดับแรกแล้ว', 'success');
-        } else {
-            const data = await response.json();
-            showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
-        }
-    } catch (error) {
-        console.error('Priority error:', error);
-        showToast('เกิดข้อผิดพลาด', 'error');
-    }
-}
-
-// ===== Full Screen Logic =====
-document.addEventListener('DOMContentLoaded', () => {
-    const fsBtn = document.getElementById('fullscreenBtn');
-    if (fsBtn) {
-        fsBtn.addEventListener('click', toggleFullScreen);
-    }
-
-    const videoFsBtn = document.getElementById('videoFsBtn');
-    if (videoFsBtn) {
-        videoFsBtn.addEventListener('click', toggleThumbnailFullScreen);
-    }
-
-    // Auto-hide UI controls on idle mouse (Global Fullscreen)
-    let mouseTimer;
-    document.addEventListener('mousemove', () => {
-        document.body.classList.remove('hide-cursor');
-        if (fsBtn) fsBtn.style.opacity = '1';
-        clearTimeout(mouseTimer);
-        mouseTimer = setTimeout(() => {
-            if (!document.fullscreenElement) return;
-            document.body.classList.add('hide-cursor');
-            if (fsBtn) fsBtn.style.opacity = '0';
-        }, 3000);
-    });
-});
-
-function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(e => {
-            console.error(`Error attempting to enable full-screen mode: ${e.message}`);
-        });
-    } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-    }
-}
-
-function toggleThumbnailFullScreen() {
-    const nowPlayingDiv = document.getElementById('nowPlaying');
-    if (!nowPlayingDiv) return;
-
-    if (!document.fullscreenElement) {
-        nowPlayingDiv.requestFullscreen().catch(e => {
-            console.error(`Error attempting to enable thumbnail full-screen mode: ${e.message}`);
-        });
-    } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-    }
-}
-// ===== History Modal Functions =====
-function openHistory() {
-    console.log('Opening history modal...');
-    const modal = document.getElementById('historyModal');
-    if (modal) {
-        modal.classList.add('active');
-        loadHistory();
-    } else {
-        console.error('History modal element not found!');
-    }
-}
-
-function closeHistory() {
-    const modal = document.getElementById('historyModal');
-    if (modal) modal.classList.remove('active');
-}
-
-async function loadHistory() {
-    const list = document.getElementById('historyList');
-    if (!list) return;
-
-    try {
-        const response = await fetch('/api/history');
-        let history = await response.json();
-
-        if (!history || history.length === 0) {
-            list.innerHTML = '<div class="text-center py-4 text-muted">ยังไม่มีประวัติการเล่นเพลง</div>';
-            return;
-        }
-
-        // Populate date filter dropdown
-        const dateFilter = document.getElementById('historyDateFilter');
-        if (dateFilter) {
-            const dates = [...new Set(history.map(h => h.playedAt?.split('T')[0]).filter(Boolean))].sort().reverse();
-            const currentValue = dateFilter.value;
-
-            // Only rebuild if options have changed
-            const existingDates = Array.from(dateFilter.options).map(o => o.value).slice(1);
-            if (JSON.stringify(dates) !== JSON.stringify(existingDates)) {
-                dateFilter.innerHTML = '<option value="all">ทั้งหมด</option>' +
-                    dates.map(d => `<option value="${d}">${formatDisplayDate(d)}</option>`).join('');
-                dateFilter.value = currentValue || 'all';
-            }
-        }
-
-        // Filter by date
-        const selectedDate = dateFilter ? dateFilter.value : 'all';
-        if (selectedDate !== 'all') {
-            history = history.filter(h => h.playedAt?.startsWith(selectedDate));
-        }
-
-        // Get sorting option
-        const sortSelect = document.getElementById('historySortBy');
-        const sortBy = sortSelect ? sortSelect.value : 'time-desc';
-
-        // Sort history
-        history.sort((a, b) => {
-            switch (sortBy) {
-                case 'time-asc':
-                    return new Date(a.playedAt) - new Date(b.playedAt);
-                case 'time-desc':
-                    return new Date(b.playedAt) - new Date(a.playedAt);
-                case 'name-asc':
-                    return (a.songName || '').localeCompare(b.songName || '', 'th');
-                case 'name-desc':
-                    return (b.songName || '').localeCompare(a.songName || '', 'th');
-                case 'requester-asc':
-                    return (a.name || '').localeCompare(b.name || '', 'th');
-                default:
-                    return new Date(b.playedAt) - new Date(a.playedAt);
-            }
-        });
-
-        list.innerHTML = history.map(item => {
-            const info = item.videoInfo || {};
-            const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='40' text-anchor='middle' dy='15'%3E🎵%3C/text%3E%3C/svg%3E";
-            const thumbnail = info.thumbnailMedium || info.thumbnail || placeholder;
-            const playedTime = new Date(item.playedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-            const playedDate = new Date(item.playedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-
-            return `
-                <div class="history-item">
-                    <img src="${thumbnail}" alt="" class="history-thumb" onerror="this.src='${placeholder}'">
-                    <div class="history-info">
-                        <div class="history-title" title="${escapeHtml(item.songName)}">
-                            ${escapeHtml(item.songName)}
-                            ${item.status === 'rejected' ? '<span class="badge-status-rejected">Rejected</span>' : '<span class="badge-status-completed">Played</span>'}
-                        </div>
-                        <div class="history-meta">
-                            <span>🎤 ${escapeHtml(info.author || 'ไม่ระบุศิลปิน')}</span>
-                            <span>👤 ${escapeHtml(item.name)}</span>
-                        </div>
-                        <div class="history-meta">
-                            <span>🕒 ${playedDate} ${playedTime} น.</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Error loading history:', error);
-        list.innerHTML = '<div class="text-center py-4 text-danger">ไม่สามารถโหลดข้อมูลได้</div>';
-    }
-}
-
-async function loadStats() {
-    // Currently stats are updated via loadCurrentSong results
-    // You can also add specific stats logic here if needed
-}
-
-// Utility: Format YYYY-MM-DD to display text
-function formatDisplayDate(dateStr) {
-    const date = new Date(dateStr);
-    const today = new Date().toISOString().split('T')[0];
-    if (dateStr === today) return 'วันนี้';
-
-    return date.toLocaleDateString('th-TH', {
-        day: 'numeric',
-        month: 'short',
-        year: '2-digit'
-    });
-}
-
-// ===== Session Heartbeat & Monitoring =====
-(function startHeartbeat() {
-    const sendPing = () => {
-        fetch('/api/sessions/ping', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'แอดมิน (Admin)', type: 'admin' })
-        }).catch(err => console.debug('Heartbeat failed'));
-    };
-
-    sendPing();
-    setInterval(sendPing, 30000);
-})();
-
-// Load and display active sessions
-async function loadSessions() {
-    try {
-        const res = await fetch(`/api/admin/sessions?adminKey=${adminKey}`);
-        if (!res.ok) return;
-        const sessions = await res.json();
-        renderSessions(sessions);
-    } catch (e) {
-        console.error('Failed to load sessions:', e);
-    }
-}
-
-function renderSessions(sessions) {
-    const container = document.getElementById('sessionsList');
+  function renderAdminQueue(songs){
+    const container = document.getElementById('adminQueueList');
+    const emptyEl = document.getElementById('adminEmptyQueue');
     if (!container) return;
 
-    if (sessions.length === 0) {
-        container.innerHTML = '<div class="text-muted text-center py-2">ไม่มีใครเชื่อมต่ออยู่</div>';
-        return;
+    if (!songs || songs.length === 0){
+      container.innerHTML = '';
+      if (emptyEl){ emptyEl.style.display='block'; container.appendChild(emptyEl); }
+      return;
+    }
+    if (emptyEl) emptyEl.style.display='none';
+
+    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='45' viewBox='0 0 80 45'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='20' text-anchor='middle' dy='7'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E";
+    container.innerHTML = songs.map((song, idx)=>{
+      const info = song?.videoInfo || {};
+      const tn = info.thumbnailMedium || info.thumbnail || '';
+      const safeTn = (!tn || tn === 'undefined' || /\/undefined(\b|$)/.test(tn)) ? placeholder : tn;
+      const votes = song?.votes || { up:0, down:0 };
+      return `
+        <div class="queue-item" data-id="${escapeHtml(song.id)}">
+          <div class="queue-number">${escapeHtml(String(song.queueNumber ?? (idx+1)))}</div>
+          <img src="${safeTn}" alt="" class="queue-thumbnail" onerror="this.src='${placeholder}'">
+          <div class="queue-info">
+            <div class="queue-title">${song.link ? `<a href="${escapeHtml(song.link)}" target="_blank">${escapeHtml(song.songName)}</a>` : escapeHtml(song.songName)}</div>
+            <div class="queue-meta">
+              ${info.author ? `<span>🎤 ${escapeHtml(info.author)}</span>` : ''}
+              <span>👤 ${escapeHtml(song.name)}</span>
+              <span>👍 ${votes.up} / 👎 ${votes.down}</span>
+            </div>
+          </div>
+          <div class="queue-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openLyricsModal()" title="ใส่เนื้อเพลงสำหรับเพลงนี้">🖊️ เนื้อเพลง</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectSong('${escapeHtml(song.id)}')" title="ปฏิเสธเพลงนี้">❌ ปฏิเสธ</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  let queueTimer = null;
+  function startQueueRefresh(){
+    loadQueue();
+    if (queueTimer) clearInterval(queueTimer);
+    queueTimer = setInterval(loadQueue, 5000);
+  }
+
+  // ===== Announcement Copy Box (for MC/Host) =====
+  function ensureAnnouncementBox(){
+    let box = document.getElementById('announceBox');
+    if (box) return box;
+    const header = document.querySelector('.admin-header');
+    if (!header) return null;
+    box = document.createElement('div');
+    box.id = 'announceBox';
+    box.style.cssText = 'margin-left:auto; max-width:540px; display:flex; gap:8px; align-items:center;';
+    box.innerHTML = `
+      <textarea id="announceText" rows="2" style="flex:1; padding:8px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white; font-family:inherit;" placeholder="ข้อความประกาศจะขึ้นอัตโนมัติเมื่อมีเพลงใหม่"></textarea>
+      <button class="btn btn-secondary" id="copyAnnounceBtn">คัดลอก</button>
+    `;
+    header.appendChild(box);
+    const btn = box.querySelector('#copyAnnounceBtn');
+    btn.addEventListener('click', ()=>{
+      const ta = document.getElementById('announceText');
+      if (!ta) return;
+      ta.select();
+      try { document.execCommand('copy'); showToast('คัดลอกแล้ว', 'success'); } catch(_) {}
+    });
+    return box;
+  }
+
+  function updateAnnouncementFromSongs(songs){
+    ensureAnnouncementBox();
+    const ta = document.getElementById('announceText');
+    if (!ta) return;
+    if (!songs || songs.length === 0){ ta.value=''; return; }
+    const first = songs[0];
+    const name = first?.name || '-';
+    const title = first?.songName || first?.videoInfo?.title || '-';
+    const etaMin = (typeof first?.estimatedWaitMinutes === 'number') ? first.estimatedWaitMinutes : Math.ceil(Math.max(0, (new Date(first?.estimatedPlayTime)-Date.now())/60000));
+    const playAt = first?.estimatedPlayTime ? new Date(first.estimatedPlayTime) : new Date(Date.now()+ (etaMin*60000));
+    const hh = String(playAt.getHours()).padStart(2,'0');
+    const mm = String(playAt.getMinutes()).padStart(2,'0');
+    ta.value = `คุณ ${name} ได้ขอเพลง "${title}" จะเล่นในอีก ${etaMin} นาที เวลา ${hh}:${mm} น.`;
+  }
+
+  // ===== Now Playing + Next =====
+  let lastNextSongId = null;
+  let admDuration = 0;
+  let admIsPlaying = false;
+  let admStartedAt = null; // ms timestamp when started
+  let admCurrentTime = 0; // seconds snapshot from server
+  let nowUiTimer = null;
+  async function loadCurrentSong(){
+    try{
+      const res = await fetch('/api/songs/current');
+      const data = await res.json();
+
+      const npTitle = document.getElementById('npTitle');
+      const npArtist = document.getElementById('npArtist');
+      const npThumb = document.getElementById('npThumbnail');
+      const placeholderBig = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-family='Kanit' font-size='100' fill='%236366f1' text-anchor='middle' dy='30'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E";
+
+      const current = data.current;
+      if (current){
+        const info = current.videoInfo || {};
+        if (npTitle) npTitle.textContent = current.songName || info.title || 'ไม่ทราบชื่อเพลง';
+        if (npArtist) npArtist.textContent = info.author || current.name || '-';
+        if (npThumb){
+          const tn = info.thumbnailHigh || info.thumbnailMedium || info.thumbnail || '';
+          npThumb.src = (!tn || tn === 'undefined' || /\/undefined(\b|$)/.test(tn)) ? placeholderBig : tn;
+        }
+        // Update duration and time state
+        admDuration = Number(current.duration || info.duration || 0);
+        admIsPlaying = !!data.isPlaying;
+        admStartedAt = data.playbackState && data.playbackState.startedAt ? Number(data.playbackState.startedAt) : null;
+        admCurrentTime = Number(data.currentTime || 0);
+        updateNowTimeUI();
+      } else {
+        if (npTitle) npTitle.textContent = 'ไม่มีเพลงที่เล่น';
+        if (npArtist) npArtist.textContent = '-';
+        if (npThumb) npThumb.src = placeholderBig;
+        admDuration = 0; admIsPlaying = false; admStartedAt = null; admCurrentTime = 0; updateNowTimeUI();
+      }
+
+      // Up Next
+      const next = data.nextSong;
+      const nextTitle = document.getElementById('nextTitle');
+      const nextArtist = document.getElementById('nextArtist');
+      const nextThumb = document.getElementById('nextThumbnail');
+      const nextActions = document.getElementById('nextActions');
+      const placeholderSmall = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='45' viewBox='0 0 80 45'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='20' text-anchor='middle' dy='7'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E";
+
+      if (next){
+        const info2 = next.videoInfo || {};
+        if (nextTitle) nextTitle.textContent = next.songName || info2.title || '';
+        if (nextArtist) nextArtist.textContent = info2.author || next.name || '-';
+        if (nextThumb){
+          const tn2 = info2.thumbnailMedium || info2.thumbnail || '';
+          nextThumb.src = (!tn2 || tn2 === 'undefined' || /\/undefined(\b|$)/.test(tn2)) ? placeholderSmall : tn2;
+        }
+        if (nextActions) nextActions.style.display = 'block';
+        lastNextSongId = next.id || null;
+      } else {
+        if (nextTitle) nextTitle.textContent = 'ไม่มีเพลงถัดไป';
+        if (nextArtist) nextArtist.textContent = '-';
+        if (nextThumb) nextThumb.src = placeholderSmall;
+        if (nextActions) nextActions.style.display = 'none';
+        lastNextSongId = null;
+      }
+
+      // Update stats counters (today/total) if available
+      const statToday = document.getElementById('statToday');
+      const statTotal = document.getElementById('statTotalPlayed');
+      if (data.stats) {
+        if (statToday) statToday.textContent = data.stats.todayCount ?? 0;
+        if (statTotal) statTotal.textContent = data.stats.totalPlayed ?? 0;
+      }
+    }catch(e){ console.error('Error loading current song:', e); }
+  }
+
+  function formatTimeMMSS(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(sec/60);
+    const s = sec%60;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function updateNowTimeUI(){
+    const curEl = document.getElementById('npCurrentTime');
+    const durEl = document.getElementById('npDuration');
+    const barFill = document.getElementById('npProgress');
+    const seek = document.getElementById('seekBar');
+    const nowSec = admIsPlaying && admStartedAt ? ((Date.now() - admStartedAt)/1000) : admCurrentTime;
+    const clamped = Math.max(0, Math.min(admDuration || 0, nowSec));
+    if (curEl) curEl.textContent = formatTimeMMSS(clamped);
+    if (durEl) durEl.textContent = formatTimeMMSS(admDuration || 0);
+    const pct = (admDuration > 0) ? (clamped/admDuration*100) : 0;
+    if (barFill) barFill.style.width = `${pct}%`;
+    if (seek) seek.value = String(Math.min(100, Math.max(0, pct)));
+  }
+
+  if (nowUiTimer) clearInterval(nowUiTimer);
+  nowUiTimer = setInterval(()=>{
+    if (admIsPlaying && admStartedAt){ updateNowTimeUI(); }
+  }, 1000);
+
+  window.rejectNextSong = async function(){
+    if (!lastNextSongId) return;
+    try{
+      const res = await fetch(`/api/songs/${encodeURIComponent(lastNextSongId)}`,{
+        method:'DELETE', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast('❌ ปฏิเสธเพลงถัดไปแล้ว','success');
+        loadQueue();
+        loadCurrentSong();
+      } else {
+        const data = await res.json().catch(()=>({}));
+        showToast(data.error || 'ปฏิเสธไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('Reject next error:', e); }
+  };
+
+  let nowTimer = null;
+  function startNowPlayingRefresh(){
+    loadCurrentSong();
+    if (nowTimer) clearInterval(nowTimer);
+    nowTimer = setInterval(loadCurrentSong, 3000);
+  }
+
+  // ===== Stats =====
+  async function loadStats(){
+    try{
+      const res = await fetch('/api/stats');
+      const stats = await res.json();
+      renderStats(stats || {});
+    }catch(e){ console.error('Stats error:', e); }
+  }
+
+  function renderStats(stats){
+    const list = document.getElementById('statsList');
+    if (!list) return;
+    const entries = Object.entries(stats).sort((a,b)=> b[0].localeCompare(a[0]));
+    if (entries.length === 0){
+      list.innerHTML = '<p class="text-center text-muted">ยังไม่มีสถิติ</p>';
+      return;
+    }
+    list.innerHTML = entries.map(([date,count])=>{
+      return `
+        <div class="history-item" style="cursor:pointer" onclick="openHistoryFor('${date}')">
+          <div class="history-info">
+            <div class="history-title">${date}</div>
+            <div class="history-meta">จำนวนที่เล่น: ${count}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.openHistoryFor = function(date){
+    const sel = document.getElementById('historyDateFilter');
+    if (sel){ sel.value = date; }
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.add('active');
+    // If main.js history loader is available, it will pick the date filter
+    if (typeof window.loadHistory === 'function') {
+      try { window.loadHistory(); } catch(_){}
+    }
+  };
+
+  let statsTimer = null;
+  function startStatsRefresh(){
+    loadStats();
+    if (statsTimer) clearInterval(statsTimer);
+    statsTimer = setInterval(loadStats, 30000);
+  }
+
+  // ===== Sessions =====
+  async function loadSessions(){
+    const key = getAdminKey();
+    if (!key) return;
+    try{
+      const res = await fetch(`/api/admin/sessions?adminKey=${encodeURIComponent(key)}`);
+      if (handleUnauthorized(res)) return;
+      const data = await res.json();
+      const sessions = Array.isArray(data) ? data : (typeof data === 'object' ? Object.values(data) : []);
+      renderSessions(sessions);
+    }catch(e){ console.error('Sessions error:', e); }
+  }
+
+  function renderSessions(sessions){
+    const container = document.getElementById('sessionsList');
+    if (!container) return;
+    if (!sessions || sessions.length === 0){
+      container.innerHTML = '<p class="text-center text-muted">ไม่มีผู้ใช้ออนไลน์</p>';
+      return;
+    }
+    const typeLabel = { user:'ผู้ใช้', player:'เครื่องเล่น', admin:'แอดมิน' };
+    const typeColor = { user:'#eee', player:'#00ff88', admin:'#6366f1' };
+    const now = Date.now();
+    container.innerHTML = sessions.map(s=>{
+      const last = s.lastSeen || s.lastPing || now;
+      const diff = Math.max(0, Math.floor((now - new Date(last)) / 1000));
+      const lastSeenText = diff < 60 ? 'เมื่อกี้' : (diff < 3600 ? `${Math.floor(diff/60)} นาที` : `${Math.floor(diff/3600)} ชม.`);
+      return `
+        <div class="queue-item">
+          <div class="song-info">
+            <div class="song-name" style="color:${typeColor[s.type]||'#fff'};">${typeLabel[s.type]||s.type||''}</div>
+            <div class="song-meta">
+              <span>📍 ${escapeHtml(s.ip||'-')}</span>
+              <span style="margin-left:10px;">👤 ${escapeHtml(s.name||'-')}</span>
+            </div>
+          </div>
+          <div class="queue-actions">
+            <span class="badge" style="background: rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;">${lastSeenText}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  let sessionTimer = null;
+  function startSessionsRefresh(){
+    loadSessions();
+    if (sessionTimer) clearInterval(sessionTimer);
+    sessionTimer = setInterval(loadSessions, 10000);
+  }
+
+  // ===== Playback Controls =====
+  async function fetchCurrentState(){
+    try{ const r = await fetch('/api/songs/current'); return await r.json(); }catch{ return {}; }
+  }
+
+  window.togglePlay = async function(){
+    const key = getAdminKey(); if (!key) return;
+    try{
+      const state = await fetchCurrentState();
+      const isPlaying = !!state.isPlaying;
+      const action = isPlaying ? 'pause' : 'play';
+      const res = await fetch('/api/playback',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key, action })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast(action === 'play' ? '▶️ กำลังเล่น' : '⏸️ หยุดชั่วคราว','success');
+        loadCurrentSong();
+        loadQueue();
+      } else {
+        showToast('เกิดข้อผิดพลาด', 'error');
+      }
+    }catch(e){ console.error('togglePlay error:', e); }
+  };
+
+  window.skipSong = async function(){
+    const key = getAdminKey(); if (!key) return;
+    try{
+      const res = await fetch('/api/songs/skip',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast('⏭️ ข้ามเพลง','success');
+        loadCurrentSong();
+        loadQueue();
+      } else {
+        showToast('ข้ามเพลงไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('skipSong error:', e); }
+  };
+
+  window.toggleRepeat = async function(){
+    const key = getAdminKey(); if (!key) return;
+    try{
+      const state = await fetchCurrentState();
+      const currently = !!(state.playbackState && state.playbackState.isRepeat);
+      const res = await fetch('/api/playback/repeat',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key, enabled: !currently })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast(!currently ? '🔁 เปิดโหมดวนซ้ำ' : '➡️ ปิดโหมดวนซ้ำ','success');
+      }
+    }catch(e){ console.error('toggleRepeat error:', e); }
+  };
+
+  window.adjustTime = async function(delta){
+    const key = getAdminKey(); if (!key) return;
+    try{
+      const state = await fetchCurrentState();
+      const base = Number(state.currentTime || 0);
+      const target = Math.max(0, base + Number(delta||0));
+      const res = await fetch('/api/playback/seek',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key, time: target })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok) showToast('⏩ ปรับเวลาเล่น','success');
+    }catch(e){ console.error('adjustTime error:', e); }
+  };
+
+  // Seek bar handler (0-100 percent)
+  window.handleSeek = async function(percent){
+    const key = getAdminKey(); if (!key) return;
+    const p = Math.max(0, Math.min(100, parseFloat(percent)||0));
+    const duration = admDuration || 0;
+    const time = duration > 0 ? (p/100)*duration : 0;
+    try{
+      const res = await fetch('/api/playback/seek',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key, time: Math.floor(time) })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        admCurrentTime = time; admStartedAt = Date.now(); admIsPlaying = true;
+        updateNowTimeUI();
+      }
+    }catch(e){ console.error('handleSeek error:', e); }
+  }
+
+  // ===== Init =====
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const t = setInterval(()=>{ if (ensureLyricsButtons()) clearInterval(t); }, 500);
+    const s = document.getElementById('adminVolumeSlider');
+    const n = document.getElementById('adminVolumeNumber');
+    const initV = s ? s.value : (n ? n.value : '100');
+    // Only sync UI, do not POST before login
+    const volumeValueEl = document.getElementById('volumeValue');
+    if (volumeValueEl) volumeValueEl.innerText = `${Math.max(0, Math.min(100, parseInt(initV,10) || 100))}%`;
+    if (n && s) n.value = String(s.value);
+
+    // Start read-only refreshers even before login
+    startNowPlayingRefresh();
+    startStatsRefresh();
+    startQueueRefresh();
+
+    // Minimal login handling to set adminKey and reveal dashboard
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pw = (document.getElementById('passwordInput')?.value || '').trim();
+        if (!pw) return;
+        try { localStorage.setItem('adminKey', pw); window.adminKey = pw; } catch(_) {}
+        const loginScreen = document.getElementById('loginScreen');
+        const adminDashboard = document.getElementById('adminDashboard');
+        if (loginScreen) loginScreen.classList.add('hidden');
+        if (adminDashboard) adminDashboard.classList.remove('hidden');
+        showToast('เข้าสู่ระบบแล้ว', 'success');
+        ensureLyricsButtons();
+        ensureAnnouncementBox();
+        // Now it's safe to POST volume once
+        if (s) window.adjustVolume(s.value);
+        startQueueRefresh();
+        startNowPlayingRefresh();
+        startStatsRefresh();
+        startSessionsRefresh();
+      });
     }
 
-    const typeLabel = { 'player': '📺 Player', 'admin': '⚙️ Admin', 'user': '👤 User' };
-    const typeColor = { 'player': '#00d4aa', 'admin': '#6366f1', 'user': '#ffffff' };
+    // Auto-show dashboard if key already exists
+    const existingKey = getAdminKey();
+    if (existingKey) {
+      const loginScreen = document.getElementById('loginScreen');
+      const adminDashboard = document.getElementById('adminDashboard');
+      if (loginScreen) loginScreen.classList.add('hidden');
+      if (adminDashboard) adminDashboard.classList.remove('hidden');
+      ensureLyricsButtons();
+      ensureAnnouncementBox();
+      if (s) window.adjustVolume(s.value);
+      startQueueRefresh();
+      startNowPlayingRefresh();
+      startStatsRefresh();
+      startSessionsRefresh();
+    }
 
-    container.innerHTML = sessions.map(s => {
-        const lastSeenAgo = Math.floor((Date.now() - s.lastSeen) / 1000);
-        const lastSeenText = lastSeenAgo < 10 ? 'ออนไลน์' : `${lastSeenAgo} วิ ก่อน`;
+    // Sanitize undefined image src to avoid 404 /undefined
+    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='68' viewBox='0 0 120 68'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='20' text-anchor='middle' dy='7'%3E%F0%9F%8E%B5%3C/text%3E%3C/svg%3E";
+    function fixInvalidSrc(img){
+      if (!img) return;
+      const src = img.getAttribute('src');
+      if (!src || src === 'undefined' || /\/undefined(\b|$)/.test(src)) {
+        img.setAttribute('src', placeholder);
+      }
+    }
+    document.addEventListener('error', (e)=>{
+      const t = e.target;
+      if (t && t.tagName === 'IMG') fixInvalidSrc(t);
+    }, true);
+    document.querySelectorAll('img').forEach(fixInvalidSrc);
+  });
 
-        return `
-            <div class="queue-item" style="border-left: 3px solid ${typeColor[s.type] || '#fff'};">
-                <div class="song-info">
-                    <div class="song-name" style="color: ${typeColor[s.type] || '#fff'};">${typeLabel[s.type] || s.type}</div>
-                    <div class="song-meta">
-                        <span>📍 ${escapeHtml(s.ip)}</span>
-                        <span style="margin-left: 10px;">👤 ${escapeHtml(s.name)}</span>
-                    </div>
-                </div>
-                <div class="queue-actions">
-                    <span class="badge" style="background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid #00ff88;">${lastSeenText}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
+// History modal open/close handlers
+window.openHistory = function(){
+  const m = document.getElementById('historyModal');
+  if (m) m.classList.add('active');
+};
+window.closeHistory = function(){
+  const m = document.getElementById('historyModal');
+  if (m) m.classList.remove('active');
+};
 
-// Refresh sessions every 10 seconds
-setInterval(loadSessions, 10000);
+// Logout handler (global)
+window.logout = function(){
+  try { localStorage.removeItem('adminKey'); delete window.adminKey; } catch(_) {}
+  const loginScreen = document.getElementById('loginScreen');
+  const adminDashboard = document.getElementById('adminDashboard');
+  if (adminDashboard) adminDashboard.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  try { showToast('ออกจากระบบแล้ว', 'success'); } catch(_) {}
+};
+
+// Safety guards to avoid ReferenceError from inline onclick before JS loads
+window.togglePlay = window.togglePlay || function(){ console.warn('togglePlay not ready'); };
+window.skipSong = window.skipSong || function(){ console.warn('skipSong not ready'); };
+window.toggleRepeat = window.toggleRepeat || function(){ console.warn('toggleRepeat not ready'); };
+window.adjustTime = window.adjustTime || function(){ console.warn('adjustTime not ready'); };
+window.toggleCinema = window.toggleCinema || function(){ console.warn('toggleCinema not ready'); };
+window.rejectSong = window.rejectSong || function(){ console.warn('rejectSong not ready'); };
+window.ensureAnnouncementBox = window.ensureAnnouncementBox || function(){ console.warn('ensureAnnouncementBox not ready'); };
+
+})();

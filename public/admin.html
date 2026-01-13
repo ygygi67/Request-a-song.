@@ -134,9 +134,9 @@
                 <div class="stat-value" id="statTotalPlayed">0</div>
                 <div class="stat-label">สถิติทั้งหมด</div>
             </div>
-            <div class="stat-card history-card" onclick="openHistory()">
-                <div class="stat-value">🕒</div>
-                <div class="stat-label">ดูประวัติย้อนหลัง</div>
+            <div class="stat-card" id="announceCard">
+                <textarea id="announceText" rows="2" style="width:100%; height:60px; padding:8px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white; font-family:inherit; resize:none;" placeholder="ข้อความประกาศจะขึ้นอัตโนมัติเมื่อมีเพลงใหม่"></textarea>
+                <button class="btn btn-secondary" id="copyAnnounceBtn" style="margin-top:6px; width:100%;">คัดลอก</button>
             </div>
         </div>
 
@@ -191,12 +191,23 @@
                     <div class="volume-control"
                         style="display: flex; align-items: center; gap: 10px; margin-top: 15px; justify-content: center;">
                         <span title="เสียง">🔊</span>
+                        <input type="number" id="adminVolumeNumber" min="0" max="100" value="100"
+                            style="width: 70px; padding: 6px 10px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: white; text-align: center;"
+                            onchange="adjustVolume(this.value)">
                         <input type="range" id="adminVolumeSlider" min="0" max="100" value="100"
                             style="width: 150px; accent-color: #6366f1;" onchange="adjustVolume(this.value)">
                         <span id="volumeValue">100%</span>
                     </div>
 
                     <div class="player-controls" style="margin-top: 10px;">
+                        <button class="btn btn-icon btn-secondary" onclick="toggleLyricsMode()"
+                            title="สลับแสดงเนื้อเพลง/คิว">
+                            📝
+                        </button>
+                        <button class="btn btn-icon btn-secondary" onclick="togglePartyMode()"
+                            title="เปิด/ปิดโหมดปาร์ตี้">
+                            🎉
+                        </button>
                         <button class="btn btn-icon btn-secondary" onclick="toggleCinema()"
                             title="โหมดโรงหนัง (ขยายจอ Player)">
                             🖵

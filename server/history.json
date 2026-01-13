@@ -602,5 +602,732 @@
       "isDuplicate": false,
       "playedAt": "2026-01-12T05:11:46.950Z"
     }
+  ],
+  "2026-01-13": [
+    {
+      "id": "1768194106335",
+      "name": "โมสต์",
+      "songName": "ความเชื่อ",
+      "link": "https://www.youtube.com/watch?v=ff7ao5s0heQ",
+      "submittedAt": "2026-01-12T05:01:46.335Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "ff7ao5s0heQ",
+        "title": "ความเชื่อ",
+        "author": "Bodyslam - Topic",
+        "thumbnail": "https://img.youtube.com/vi/ff7ao5s0heQ/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/ff7ao5s0heQ/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 297,
+        "url": "https://www.youtube.com/watch?v=ff7ao5s0heQ"
+      },
+      "duration": 297,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:39:48.927Z"
+    },
+    {
+      "id": "1768194758031",
+      "name": "โมสต์",
+      "songName": "\"Your Idol\" | Official Song Clip | KPop Demon Hunters | Sony Animation",
+      "link": "https://www.youtube.com/watch?v=cWppAbqm9I8",
+      "submittedAt": "2026-01-12T05:12:38.031Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "cWppAbqm9I8",
+        "title": "\"Your Idol\" | Official Song Clip | KPop Demon Hunters | Sony Animation",
+        "author": "Sony Pictures Animation",
+        "thumbnail": "https://img.youtube.com/vi/cWppAbqm9I8/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/cWppAbqm9I8/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 119,
+        "url": "https://www.youtube.com/watch?v=cWppAbqm9I8"
+      },
+      "duration": 119,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:41:50.947Z"
+    },
+    {
+      "id": "1768194777362",
+      "name": "โมสต์",
+      "songName": "ฤดูร้อน - PARADOX【OFFICIAL MV】",
+      "link": "https://www.youtube.com/watch?v=8k6C_3Q4S1o",
+      "submittedAt": "2026-01-12T05:12:57.362Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "8k6C_3Q4S1o",
+        "title": "ฤดูร้อน - PARADOX【OFFICIAL MV】",
+        "author": "GMM GRAMMY OFFICIAL",
+        "thumbnail": "https://img.youtube.com/vi/8k6C_3Q4S1o/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/8k6C_3Q4S1o/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 232,
+        "url": "https://www.youtube.com/watch?v=8k6C_3Q4S1o"
+      },
+      "duration": 232,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:45:47.867Z"
+    },
+    {
+      "id": "1768314898194",
+      "name": "โมสต์",
+      "songName": "บุญผลา",
+      "link": "https://www.youtube.com/watch?v=FSMxzAYZi3M&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=11",
+      "submittedAt": "2026-01-13T14:34:58.194Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "FSMxzAYZi3M",
+        "title": "บุญผลา",
+        "author": "Mike Piromphon - Topic",
+        "thumbnail": "https://img.youtube.com/vi/FSMxzAYZi3M/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/FSMxzAYZi3M/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 270,
+        "url": "https://www.youtube.com/watch?v=FSMxzAYZi3M&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=11"
+      },
+      "duration": 270,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:50:19.614Z"
+    },
+    {
+      "id": "1768315098015",
+      "name": "โมสต์",
+      "songName": "Fendi 2",
+      "link": "https://www.youtube.com/watch?v=sjmcXTn7rqI&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=28",
+      "submittedAt": "2026-01-13T14:38:18.015Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "sjmcXTn7rqI",
+        "title": "Fendi 2",
+        "author": "Rakhim - Topic",
+        "thumbnail": "https://img.youtube.com/vi/sjmcXTn7rqI/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/sjmcXTn7rqI/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 90,
+        "url": "https://www.youtube.com/watch?v=sjmcXTn7rqI&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=28"
+      },
+      "duration": 90,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:51:30.282Z"
+    },
+    {
+      "id": "1768315346181",
+      "name": "โมสต์",
+      "songName": "MEMORIES FUNK",
+      "link": "https://www.youtube.com/watch?v=3K0Bkm8Os_s",
+      "submittedAt": "2026-01-13T14:42:26.181Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "3K0Bkm8Os_s",
+        "title": "MEMORIES FUNK",
+        "author": "Vermillion - Topic",
+        "thumbnail": "https://img.youtube.com/vi/3K0Bkm8Os_s/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/3K0Bkm8Os_s/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 97,
+        "url": "https://www.youtube.com/watch?v=3K0Bkm8Os_s"
+      },
+      "duration": 97,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:53:09.343Z"
+    },
+    {
+      "id": "1768315906680",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "Lobster",
+      "link": "https://www.youtube.com/watch?v=JQev-T3Mhvg&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=32",
+      "submittedAt": "2026-01-13T14:51:46.680Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "JQev-T3Mhvg",
+        "title": "Lobster",
+        "author": "RJ Pasin - Topic",
+        "thumbnail": "https://img.youtube.com/vi/JQev-T3Mhvg/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/JQev-T3Mhvg/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 116,
+        "url": "https://www.youtube.com/watch?v=JQev-T3Mhvg&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=32"
+      },
+      "duration": 116,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:55:10.659Z"
+    },
+    {
+      "id": "1768316018789",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "Tourist",
+      "link": "https://www.youtube.com/watch?v=rfRuUszGoBs&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=33",
+      "submittedAt": "2026-01-13T14:53:38.789Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "rfRuUszGoBs",
+        "title": "Tourist",
+        "author": "RJ Pasin - Topic",
+        "thumbnail": "https://img.youtube.com/vi/rfRuUszGoBs/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/rfRuUszGoBs/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 86,
+        "url": "https://www.youtube.com/watch?v=rfRuUszGoBs&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=33"
+      },
+      "duration": 86,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:57:15.521Z"
+    },
+    {
+      "id": "1768316039635",
+      "name": "โมสต์",
+      "songName": "Rough Days",
+      "link": "https://www.youtube.com/watch?v=3Xhj5q5YtBA&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=34",
+      "submittedAt": "2026-01-13T14:53:59.635Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "3Xhj5q5YtBA",
+        "title": "Rough Days",
+        "author": "RJ Pasin - Topic",
+        "thumbnail": "https://img.youtube.com/vi/3Xhj5q5YtBA/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/3Xhj5q5YtBA/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 72,
+        "url": "https://www.youtube.com/watch?v=3Xhj5q5YtBA&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=34"
+      },
+      "duration": 72,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T14:58:34.167Z"
+    },
+    {
+      "id": "1768316082047",
+      "name": "โมสต์",
+      "songName": "Just One Thing",
+      "link": "https://www.youtube.com/watch?v=UHYFHiv5jTA&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=40",
+      "submittedAt": "2026-01-13T14:54:42.047Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "UHYFHiv5jTA",
+        "title": "Just One Thing",
+        "author": "Solitude Is Bliss - Topic",
+        "thumbnail": "https://img.youtube.com/vi/UHYFHiv5jTA/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/UHYFHiv5jTA/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 249,
+        "url": "https://www.youtube.com/watch?v=UHYFHiv5jTA&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=40"
+      },
+      "duration": 249,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:02:46.459Z"
+    },
+    {
+      "id": "1768316231191",
+      "name": "โมสต์",
+      "songName": "Say Goodbye",
+      "link": "https://www.youtube.com/watch?v=Rpyj6T7QBOQ&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=38",
+      "submittedAt": "2026-01-13T14:57:11.191Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "Rpyj6T7QBOQ",
+        "title": "Say Goodbye",
+        "author": "Lodoni - Topic",
+        "thumbnail": "https://img.youtube.com/vi/Rpyj6T7QBOQ/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/Rpyj6T7QBOQ/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 106,
+        "url": "https://www.youtube.com/watch?v=Rpyj6T7QBOQ&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=38"
+      },
+      "duration": 106,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:04:35.913Z"
+    },
+    {
+      "id": "1768316650101",
+      "name": "โมสต์",
+      "songName": "Memory Reboot",
+      "link": "https://www.youtube.com/watch?v=EASIaOpeSTY&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=37",
+      "submittedAt": "2026-01-13T15:04:10.101Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "EASIaOpeSTY",
+        "title": "Memory Reboot",
+        "author": "VØJ - Topic",
+        "thumbnail": "https://img.youtube.com/vi/EASIaOpeSTY/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/EASIaOpeSTY/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 209,
+        "url": "https://www.youtube.com/watch?v=EASIaOpeSTY&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=37"
+      },
+      "duration": 209,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:08:05.793Z"
+    },
+    {
+      "id": "1768316666578",
+      "name": "โมสต์",
+      "songName": "DIRTY SHOES FUNK (SLOWED)",
+      "link": "https://www.youtube.com/watch?v=NhYVd2EfRPk&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=45",
+      "submittedAt": "2026-01-13T15:04:26.578Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "NhYVd2EfRPk",
+        "title": "DIRTY SHOES FUNK (SLOWED)",
+        "author": "DJ Javi26 - Topic",
+        "thumbnail": "https://img.youtube.com/vi/NhYVd2EfRPk/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/NhYVd2EfRPk/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 103,
+        "url": "https://www.youtube.com/watch?v=NhYVd2EfRPk&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=45"
+      },
+      "duration": 103,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:09:51.274Z"
+    },
+    {
+      "id": "1768316755132",
+      "name": "โมสต์",
+      "songName": "Untrust Us",
+      "link": "https://www.youtube.com/watch?v=TQXHruZzLQM&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=48",
+      "submittedAt": "2026-01-13T15:05:55.132Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "TQXHruZzLQM",
+        "title": "Untrust Us",
+        "author": "Crystal Castles - Topic",
+        "thumbnail": "https://img.youtube.com/vi/TQXHruZzLQM/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/TQXHruZzLQM/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 186,
+        "url": "https://www.youtube.com/watch?v=TQXHruZzLQM&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=48"
+      },
+      "duration": 186,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:12:08.160Z"
+    },
+    {
+      "id": "1768316926309",
+      "name": "โมสต์",
+      "songName": "สกัดดาวยั่ว",
+      "link": "https://www.youtube.com/watch?v=OBYgPNzpxLc&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=56",
+      "submittedAt": "2026-01-13T15:08:46.309Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "OBYgPNzpxLc",
+        "title": "สกัดดาวยั่ว",
+        "author": "ใบเตย อาร์สยาม - Topic",
+        "thumbnail": "https://img.youtube.com/vi/OBYgPNzpxLc/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/OBYgPNzpxLc/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 210,
+        "url": "https://www.youtube.com/watch?v=OBYgPNzpxLc&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=56"
+      },
+      "duration": 210,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T15:14:54.221Z"
+    },
+    {
+      "id": "1768316952280",
+      "name": "โมสต์",
+      "songName": "ใจฉันตามเธอไป",
+      "link": "https://www.youtube.com/watch?v=9L9ynqxHZ2k&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=65",
+      "submittedAt": "2026-01-13T15:09:12.280Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "9L9ynqxHZ2k",
+        "title": "ใจฉันตามเธอไป",
+        "author": "YOUNGOHM - Topic",
+        "thumbnail": "https://img.youtube.com/vi/9L9ynqxHZ2k/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/9L9ynqxHZ2k/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 264,
+        "url": "https://www.youtube.com/watch?v=9L9ynqxHZ2k&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=65"
+      },
+      "duration": 264,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:01:16.816Z"
+    },
+    {
+      "id": "1768316970688",
+      "name": "โมสต์",
+      "songName": "poster boy",
+      "link": "https://www.youtube.com/watch?v=jOLT6ukrQSg&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=67",
+      "submittedAt": "2026-01-13T15:09:30.688Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "jOLT6ukrQSg",
+        "title": "poster boy",
+        "author": " 2hollis - Topic",
+        "thumbnail": "https://img.youtube.com/vi/jOLT6ukrQSg/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/jOLT6ukrQSg/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 121,
+        "url": "https://www.youtube.com/watch?v=jOLT6ukrQSg&list=PLClZz0mM3CSnNzNF9pAefp7HfOQ1tMDkU&index=67"
+      },
+      "duration": 121,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:04:58.831Z"
+    },
+    {
+      "id": "1768318910409",
+      "name": "โมสต์",
+      "songName": "1 นาที OWEN Ft. P.A.P BEATBAND | official mv",
+      "link": "https://www.youtube.com/watch?v=eeUyV6Ou8HM",
+      "submittedAt": "2026-01-13T15:41:50.409Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "eeUyV6Ou8HM",
+        "title": "1 นาที OWEN Ft. P.A.P BEATBAND | official mv",
+        "author": "Mix music Thailand",
+        "thumbnail": "https://img.youtube.com/vi/eeUyV6Ou8HM/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/eeUyV6Ou8HM/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 214,
+        "url": "https://www.youtube.com/watch?v=eeUyV6Ou8HM"
+      },
+      "duration": 214,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:08:35.164Z"
+    },
+    {
+      "id": "1768320202245",
+      "name": "โมสต์",
+      "songName": "นครดารา",
+      "link": "https://www.youtube.com/watch?v=wsDVZRxodrQ",
+      "submittedAt": "2026-01-13T16:03:22.245Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "wsDVZRxodrQ",
+        "title": "นครดารา",
+        "author": "YOUNGOHM - Topic",
+        "thumbnail": "https://img.youtube.com/vi/wsDVZRxodrQ/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/wsDVZRxodrQ/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 196,
+        "url": "https://www.youtube.com/watch?v=wsDVZRxodrQ"
+      },
+      "duration": 196,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:16:34.324Z"
+    },
+    {
+      "id": "1768320215585",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "YOUNGOHM - Benz ดำ (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=QkiF57kn6RI",
+      "submittedAt": "2026-01-13T16:03:35.585Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "QkiF57kn6RI",
+        "title": "YOUNGOHM - Benz ดำ (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/QkiF57kn6RI/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/QkiF57kn6RI/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 170,
+        "url": "https://www.youtube.com/watch?v=QkiF57kn6RI"
+      },
+      "duration": 170,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:17:20.817Z"
+    },
+    {
+      "id": "1768320540565",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "YOUNGOHM - มอง 2568 (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=Fg0J_3QxtGU",
+      "submittedAt": "2026-01-13T16:09:00.565Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "Fg0J_3QxtGU",
+        "title": "YOUNGOHM - มอง 2568 (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/Fg0J_3QxtGU/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/Fg0J_3QxtGU/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 211,
+        "url": "https://www.youtube.com/watch?v=Fg0J_3QxtGU"
+      },
+      "duration": 211,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:17:35.458Z"
+    },
+    {
+      "id": "1768320819208",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - หัวใจสีดำ (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=PM_a0kh7RIc",
+      "submittedAt": "2026-01-13T16:13:39.208Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "PM_a0kh7RIc",
+        "title": "YOUNGOHM - หัวใจสีดำ (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/PM_a0kh7RIc/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/PM_a0kh7RIc/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 185,
+        "url": "https://www.youtube.com/watch?v=PM_a0kh7RIc"
+      },
+      "duration": 185,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T16:22:11.529Z"
+    },
+    {
+      "id": "1768321134084",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - หัวใจสีดำ (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=PM_a0kh7RIc",
+      "submittedAt": "2026-01-13T16:18:54.084Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "PM_a0kh7RIc",
+        "title": "YOUNGOHM - หัวใจสีดำ (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/PM_a0kh7RIc/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/PM_a0kh7RIc/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 185,
+        "url": "https://www.youtube.com/watch?v=PM_a0kh7RIc"
+      },
+      "duration": 185,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T17:37:46.752Z"
+    },
+    {
+      "id": "1768321431544",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - Outside (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=UB9INoK6xTw",
+      "submittedAt": "2026-01-13T16:23:51.544Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "UB9INoK6xTw",
+        "title": "YOUNGOHM - Outside (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/UB9INoK6xTw/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/UB9INoK6xTw/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 175,
+        "url": "https://www.youtube.com/watch?v=UB9INoK6xTw"
+      },
+      "duration": 175,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T17:40:43.293Z"
+    },
+    {
+      "id": "1768322869213",
+      "name": "โมสต์",
+      "songName": "ฟ้ารักพ่อ Badmixy ft. ยุ้ย ญาติเยอะ [เนื้อเพลง]",
+      "link": "https://www.youtube.com/watch?v=cExO7YaS6XY",
+      "submittedAt": "2026-01-13T16:47:49.213Z",
+      "votes": {
+        "up": 1,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "cExO7YaS6XY",
+        "title": "ฟ้ารักพ่อ Badmixy ft. ยุ้ย ญาติเยอะ [เนื้อเพลง]",
+        "author": "Bacon chaneel",
+        "thumbnail": "https://img.youtube.com/vi/cExO7YaS6XY/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/cExO7YaS6XY/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 247,
+        "url": "https://www.youtube.com/watch?v=cExO7YaS6XY"
+      },
+      "duration": 247,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T17:44:54.238Z"
+    },
+    {
+      "id": "1768324491725",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - Outside (Official Lyric Video)",
+      "link": "https://www.youtube.com/watch?v=UB9INoK6xTw",
+      "submittedAt": "2026-01-13T17:14:51.725Z",
+      "votes": {
+        "up": 0,
+        "down": 1
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "UB9INoK6xTw",
+        "title": "YOUNGOHM - Outside (Official Lyric Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/UB9INoK6xTw/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/UB9INoK6xTw/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 175,
+        "url": "https://www.youtube.com/watch?v=UB9INoK6xTw"
+      },
+      "duration": 175,
+      "isDuplicate": true,
+      "playedAt": "2026-01-13T17:47:55.785Z"
+    },
+    {
+      "id": "1768326090726",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - ดูไว้ (Doo White)",
+      "link": "https://www.youtube.com/watch?v=PX7oPIjsofY",
+      "submittedAt": "2026-01-13T17:41:30.726Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "rejected",
+      "videoInfo": {
+        "videoId": "PX7oPIjsofY",
+        "title": "YOUNGOHM - ดูไว้ (Doo White)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/PX7oPIjsofY/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/PX7oPIjsofY/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 217,
+        "url": "https://www.youtube.com/watch?v=PX7oPIjsofY"
+      },
+      "duration": 217,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T17:57:44.060Z"
+    },
+    {
+      "id": "1768326009535",
+      "name": "โมสต์",
+      "songName": "YOUNGOHM - ไฟเย็น (OFFICIAL VISUALIZER)",
+      "link": "https://www.youtube.com/watch?v=n7XNd1zvH_8",
+      "submittedAt": "2026-01-13T17:40:09.535Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "n7XNd1zvH_8",
+        "title": "YOUNGOHM - ไฟเย็น (OFFICIAL VISUALIZER)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/n7XNd1zvH_8/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/n7XNd1zvH_8/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 285,
+        "url": "https://www.youtube.com/watch?v=n7XNd1zvH_8"
+      },
+      "duration": 285,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T17:59:36.588Z"
+    },
+    {
+      "id": "1768326096891",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "YOUNGOHM - ธารารัตน์ (Thararat)",
+      "link": "https://www.youtube.com/watch?v=FemL1-I3s6w",
+      "submittedAt": "2026-01-13T17:41:36.891Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "FemL1-I3s6w",
+        "title": "YOUNGOHM - ธารารัตน์ (Thararat)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/FemL1-I3s6w/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/FemL1-I3s6w/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 256,
+        "url": "https://www.youtube.com/watch?v=FemL1-I3s6w"
+      },
+      "duration": 256,
+      "isDuplicate": false,
+      "playedAt": "2026-01-13T18:05:39.356Z"
+    }
   ]
 }

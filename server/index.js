@@ -78,8 +78,10 @@ if (!cache.has('playbackState')) {
         startedAt: null,
         isRepeat: false,
         cinemaMode: false,
+        partyMode: false,
         lyricsMode: false,
         currentLyrics: '',
+        lyricsCursor: 0,
         volume: 100,
         lastInteraction: Date.now()
     });
@@ -292,15 +294,10 @@ app.post('/api/songs', async (req, res) => {
         const todayAt = new Date().toISOString().split('T')[0];
         const todayHistory = history[todayAt] || [];
 
-        const isDuplicateInQueue = songs.some(s =>
-            s.songName.toLowerCase() === songName.toLowerCase() ||
-            (link && s.link === link)
-        );
+        // Relaxed duplicate rule: only treat as duplicate when an identical link is provided
+        const isDuplicateInQueue = songs.some(s => (link && s.link && s.link === link));
 
-        const isDuplicateInHistory = todayHistory.some(s =>
-            s.songName.toLowerCase() === songName.toLowerCase() ||
-            (link && s.link === link)
-        );
+        const isDuplicateInHistory = todayHistory.some(s => (link && s.link && s.link === link));
 
         const isDuplicate = isDuplicateInQueue || isDuplicateInHistory;
 
@@ -352,35 +349,6 @@ app.post('/api/songs', async (req, res) => {
     }
 });
 
-// Vote on a song
-app.post('/api/songs/:id/vote', (req, res) => {
-    const { id } = req.params;
-    const { type } = req.body; // 'up' or 'down'
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-
-    if (!['up', 'down'].includes(type)) {
-        return res.status(400).json({ error: 'Invalid vote type' });
-    }
-
-    const songs = cache.get('songs') || [];
-    const songIndex = songs.findIndex(s => s.id === id);
-
-    if (songIndex === -1) {
-        return res.status(404).json({ error: 'Song not found' });
-    }
-
-    // Basic server-side double vote check (IP based)
-    const voteCacheKey = `vote_${id}_${ip}`;
-    if (cache.get(voteCacheKey)) {
-        return res.status(400).json({ error: 'คุณโหวตเพลงนี้ไปแล้ว' });
-    }
-
-    songs[songIndex].votes[type]++;
-    cache.set(voteCacheKey, true, 3600); // Record vote for 1 hour
-    cache.set('songs', songs);
-
-    res.json(songs[songIndex]);
-});
 
 // Update song link (admin)
 app.put('/api/songs/:id/link', async (req, res) => {
@@ -809,7 +777,21 @@ app.get('/api/history', (req, res) => {
 
     allPlayed.sort((a, b) => new Date(b.playedAt) - new Date(a.playedAt));
 
-    res.json(allPlayed.slice(0, 50));
+    const hasPagingParams = req.query.offset !== undefined || req.query.limit !== undefined;
+    if (!hasPagingParams) {
+        return res.json(allPlayed.slice(0, 50));
+    }
+
+    const offset = Math.max(0, parseInt(req.query.offset || '0', 10) || 0);
+    const limitRaw = parseInt(req.query.limit || '10', 10) || 10;
+    const limit = Math.max(1, Math.min(500, limitRaw));
+
+    res.json({
+        items: allPlayed.slice(offset, offset + limit),
+        total: allPlayed.length,
+        offset,
+        limit
+    });
 });
 
 // Get playback stats (counts per day)
@@ -857,11 +839,56 @@ app.post('/api/admin/lyrics', (req, res) => {
     const newState = {
         ...currentState,
         lyricsMode: enabled !== undefined ? enabled : !currentState.lyricsMode,
-        currentLyrics: lyrics !== undefined ? lyrics : currentState.currentLyrics
+        currentLyrics: lyrics !== undefined ? lyrics : currentState.currentLyrics,
+        lyricsCursor: lyrics !== undefined ? 0 : (currentState.lyricsCursor || 0)
     };
     cache.set('playbackState', newState);
 
     res.json({ success: true, lyricsMode: newState.lyricsMode, currentLyrics: newState.currentLyrics });
+});
+
+// Get current lyrics for players
+app.get('/api/lyrics', (req, res) => {
+    const playbackState = cache.get('playbackState');
+    res.json({
+        lyricsMode: playbackState?.lyricsMode || false,
+        currentLyrics: playbackState?.currentLyrics || '',
+        lyricsCursor: playbackState?.lyricsCursor || 0
+    });
+});
+
+// Move to next lyrics line (admin)
+app.post('/api/admin/lyrics/next', (req, res) => {
+    const { adminKey } = req.body;
+    if (adminKey !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const state = cache.get('playbackState') || {};
+    const lines = (state.currentLyrics || '').split(/\r?\n/);
+    const maxIndex = Math.max(0, lines.length - 1);
+    const current = Math.min(state.lyricsCursor || 0, maxIndex);
+    const next = Math.min(current + 1, maxIndex);
+    const newState = { ...state, lyricsCursor: next };
+    cache.set('playbackState', newState);
+    res.json({ success: true, lyricsCursor: next });
+});
+
+// Toggle Party Mode
+app.post('/api/admin/party', (req, res) => {
+    const { adminKey } = req.body;
+    if (adminKey !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const currentState = cache.get('playbackState') || {};
+    const newState = {
+        ...currentState,
+        partyMode: !currentState.partyMode
+    };
+    cache.set('playbackState', newState);
+
+    res.json({ success: true, partyMode: newState.partyMode });
 });
 
 // Search YouTube

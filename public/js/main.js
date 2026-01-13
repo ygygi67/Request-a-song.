@@ -23,6 +23,12 @@ let searchTimeout = null;
 let selectedVideoInfo = null;
 let lastQueueIds = new Set(); // Track already seen song IDs to avoid re-animating
 let isOffline = false;
+let currentPage = 1;
+let songsPerPage = 10;
+let allSongs = [];
+let historyOffset = 0;
+let historyLimit = 10;
+let historyTotal = 0;
 
 // ===== Connection Monitoring =====
 function updateConnectionStatus() {
@@ -324,8 +330,8 @@ async function handleLinkInput() {
             selectedVideoInfo = data.videoInfo;
             showLinkPreview(data.videoInfo);
 
-            // Auto-fill song name if empty
-            if (!songInput.value && data.videoInfo.title) {
+            // Auto-fill song name when valid link is provided
+            if (data.videoInfo.title) {
                 songInput.value = data.videoInfo.title;
             }
         } else {
@@ -351,6 +357,47 @@ function showLinkPreview(info) {
         </div>
     `;
     linkPreview.classList.remove('hidden');
+}
+
+// ===== Volume Control =====
+function adjustVolume(value) {
+    const volumeValue = document.getElementById('volumeValue');
+    if (volumeValue) {
+        volumeValue.innerText = `${value}%`;
+    }
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('preferredVolume', value);
+    
+    // You could add audio context control here if needed
+    console.log(`Volume adjusted to: ${value}%`);
+}
+
+// ===== Loading Overlay =====
+function showLoading() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('show');
+    }
+}
+
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('show');
+    }
+}
+
+// Show loading when starting operations
+function showLoadingWithMessage(message = 'กำลังโหลด...') {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        const loadingText = loadingOverlay.querySelector('p');
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
+        loadingOverlay.classList.add('show');
+    }
 }
 
 // ===== Form Submit =====
@@ -465,9 +512,10 @@ async function loadQueue() {
     try {
         const response = await fetch(`${API_BASE}/api/songs`);
         const songs = await response.json();
+        allSongs = songs || []; // Ensure allSongs is always an array
         setConnectionError(false); // Success!
 
-        if (songs.length === 0) {
+        if (allSongs.length === 0) {
             emptyQueue.style.display = 'block';
             queueList.innerHTML = '';
             lastQueueIds.clear();
@@ -475,31 +523,39 @@ async function loadQueue() {
         }
 
         emptyQueue.style.display = 'none';
-        renderQueue(songs);
+        renderQueue();
     } catch (error) {
         console.error('Error loading queue:', error);
         setConnectionError(true, '⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กำลังลองใหม่...');
     }
 }
 
-function renderQueue(songs) {
-    // Track new IDs to apply animation
-    const currentIds = new Set(songs.map(s => s.id));
+function renderQueue() {
+    if (!Array.isArray(allSongs)) allSongs = [];
 
-    queueList.innerHTML = songs.map((song, index) => {
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * songsPerPage;
+    const endIndex = startIndex + songsPerPage;
+    const songsToShow = allSongs.slice(startIndex, endIndex);
+
+    const currentIds = new Set(songsToShow.map(s => s.id));
+
+    queueList.innerHTML = songsToShow.map((song, index) => {
         const info = song.videoInfo || {};
-        const thumbnail = info.thumbnailMedium || info.thumbnail || 'https://via.placeholder.com/120x68?text=🎵';
+        const placeholder = 'https://via.placeholder.com/120x68?text=🎵';
+        const thumbnail = info.thumbnailMedium || info.thumbnail || placeholder;
+        const safeThumbnail = (thumbnail && typeof thumbnail === 'string' && thumbnail !== 'undefined') ? thumbnail : placeholder;
         const submittedDate = new Date(song.submittedAt);
         const estimatedTime = new Date(song.estimatedPlayTime);
+        const globalIndex = startIndex + index;
 
-        // Only add animate-in class if the ID is actually new
         const isNew = !lastQueueIds.has(song.id);
         const animationClass = isNew ? 'animate-in' : '';
 
         return `
             <div class="queue-item ${animationClass} ${song.isDuplicate ? 'duplicate' : ''} ${song.status === 'rejected' ? 'rejected' : ''}" data-id="${song.id}">
-                <div class="queue-number">${song.queueNumber}</div>
-                <img src="${thumbnail}" alt="" class="queue-thumbnail" onerror="this.src='https://via.placeholder.com/120x68?text=🎵'">
+                <div class="queue-number">${globalIndex + 1}</div>
+                <img src="${safeThumbnail}" alt="" class="queue-thumbnail" onerror="this.src='${placeholder}'">
                 <div class="queue-info">
                     <div class="queue-title">
                         ${song.link ? `<a href="${song.link}" target="_blank">${escapeHtml(song.songName)}</a>` : escapeHtml(song.songName)}
@@ -520,9 +576,9 @@ function renderQueue(songs) {
                         data-time-str="${formatTime(estimatedTime)}">
                         ⏳ 
                         ${song.estimatedWaitSeconds < 60
-                ? `จะเปิดในอีก ${song.estimatedWaitSeconds} วินาที (${formatTime(estimatedTime)})`
-                : `จะเปิดในอีก ~${song.estimatedWaitMinutes} นาที (${formatTime(estimatedTime)})`
-            }
+                            ? `จะเปิดในอีก ${song.estimatedWaitSeconds} วินาที (${formatTime(estimatedTime)})`
+                            : `จะเปิดในอีก ~${song.estimatedWaitMinutes} นาที (${formatTime(estimatedTime)})`
+                        }
                     </div>
                 </div>
                 <div class="queue-actions">
@@ -539,8 +595,55 @@ function renderQueue(songs) {
         `;
     }).join('');
 
-    // Update the set for next render
     lastQueueIds = currentIds;
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.max(1, Math.ceil(allSongs.length / songsPerPage));
+    let paginationDiv = document.getElementById('pagination');
+
+    if (!paginationDiv) {
+        paginationDiv = document.createElement('div');
+        paginationDiv.id = 'pagination';
+        paginationDiv.className = 'pagination';
+        queueList.parentNode.insertBefore(paginationDiv, queueList.nextSibling);
+    }
+
+    if (totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    if (currentPage > 1) {
+        html += `<button class="btn btn-secondary btn-sm" onclick="changePage(${currentPage - 1})">← ก่อนหน้า</button>`;
+    }
+
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            html += `<span class="page-number active">${i}</span>`;
+        } else {
+            html += `<button class="page-number" onclick="changePage(${i})">${i}</button>`;
+        }
+    }
+
+    if (currentPage < totalPages) {
+        html += `<button class="btn btn-secondary btn-sm" onclick="changePage(${currentPage + 1})">หน้าถัดไป →</button>`;
+    }
+
+    html += `<span class="page-info">ทั้งหมด ${allSongs.length} เพลง</span>`;
+    paginationDiv.innerHTML = html;
+}
+
+function changePage(page) {
+    const totalPages = Math.max(1, Math.ceil(allSongs.length / songsPerPage));
+    currentPage = Math.min(totalPages, Math.max(1, page));
+    renderQueue();
 }
 
 // ===== Auto-update Wait Times =====
@@ -554,7 +657,6 @@ function updateCountdowns() {
         const start = parseInt(el.dataset.timestamp);
         const elapsed = Math.floor((now - start) / 1000);
         const currentRemaining = Math.max(0, remainingSeconds - elapsed);
-
         const estimatedTime = el.dataset.timeStr;
 
         if (currentRemaining < 60) {
@@ -607,7 +709,11 @@ async function vote(songId, type) {
             } else if (data.autoAction === 'prioritized') {
                 showToast('🚀 เพลงถูกลัดคิวอัตโนมัติ! (👍 15+ โหวต)', 'success');
             } else {
-                showToast(previousVote ? '✅ เปลี่ยนโหวตเรียบร้อย!' : '✅ ขอบคุณสำหรับการโหวต!', 'success');
+                if (previousVote) {
+                    showToast('✅ เปลี่ยนโหวตเรียบร้อย!', 'success');
+                } else {
+                    showToast('✅ ขอบคุณสำหรับการโหวต!', 'success');
+                }
             }
         } else {
             showToast(data.error || 'พบข้อผิดพลาดขณะโหวต', 'error');
@@ -677,9 +783,22 @@ function showToast(message, type = 'info') {
 // ===== Load History =====
 async function loadHistory() {
     try {
-        const response = await fetch(`${API_BASE}/api/history`);
-        const history = await response.json();
-        renderHistory(history);
+        const response = await fetch(`${API_BASE}/api/history?offset=${historyOffset}&limit=${historyLimit}`);
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+            historyTotal = data.length;
+            renderHistory(data);
+            renderHistoryPagination();
+            return;
+        }
+
+        const items = Array.isArray(data.items) ? data.items : [];
+        historyTotal = typeof data.total === 'number' ? data.total : items.length;
+        historyOffset = typeof data.offset === 'number' ? data.offset : historyOffset;
+        historyLimit = typeof data.limit === 'number' ? data.limit : historyLimit;
+        renderHistory(items);
+        renderHistoryPagination();
     } catch (error) {
         console.error('Error loading history:', error);
     }
@@ -724,6 +843,97 @@ function renderHistory(history) {
         </div>
     `;
     }).join('');
+}
+
+// Get or create a container in the History card header to render page info and per-page selector
+function getHistoryHeaderContainer() {
+    const list = document.getElementById('historyList');
+    if (!list) return null;
+    const card = list.closest('.card');
+    if (!card) return null;
+    const header = card.querySelector('.card-header');
+    if (!header) return null;
+    let el = document.getElementById('historyHeaderTop');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'historyHeaderTop';
+        el.style.cssText = 'margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
+        header.appendChild(el);
+    }
+    return el;
+}
+
+function renderHistoryPagination() {
+    if (!historyList) return;
+
+    const totalPages = Math.max(1, Math.ceil(historyTotal / historyLimit));
+    const currentPageNum = Math.floor(historyOffset / historyLimit) + 1;
+
+    // Render header controls (page info + per-page select) at top
+    const headerTop = getHistoryHeaderContainer();
+    if (headerTop) {
+        headerTop.innerHTML = `
+            <span class="page-info">แสดง ${Math.min(historyTotal, historyOffset + historyLimit)} / ${historyTotal} เพลง</span>
+            <select id="historyPerPage" class="page-number" onchange="setHistoryLimit(this.value)">
+                <option value="10" ${historyLimit === 10 ? 'selected' : ''}>10</option>
+                <option value="20" ${historyLimit === 20 ? 'selected' : ''}>20</option>
+                <option value="50" ${historyLimit === 50 ? 'selected' : ''}>50</option>
+                <option value="100" ${historyLimit === 100 ? 'selected' : ''}>100</option>
+            </select>
+        `;
+    }
+
+    let paginationDiv = document.getElementById('historyPagination');
+    if (!paginationDiv) {
+        paginationDiv = document.createElement('div');
+        paginationDiv.id = 'historyPagination';
+        paginationDiv.className = 'pagination';
+        historyList.parentNode.insertBefore(paginationDiv, historyList.nextSibling);
+    }
+
+    if (historyTotal <= historyLimit) {
+        // Bottom pagination not needed when single page; header already shows controls
+        paginationDiv.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    if (currentPageNum > 1) {
+        html += `<button class="btn btn-secondary btn-sm" onclick="setHistoryPage(${currentPageNum - 1})">← ก่อนหน้า</button>`;
+    }
+
+    const startPage = Math.max(1, currentPageNum - 2);
+    const endPage = Math.min(totalPages, currentPageNum + 2);
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPageNum) {
+            html += `<span class="page-number active">${i}</span>`;
+        } else {
+            html += `<button class="page-number" onclick="setHistoryPage(${i})">${i}</button>`;
+        }
+    }
+
+    if (currentPageNum < totalPages) {
+        html += `<button class="btn btn-secondary btn-sm" onclick="setHistoryPage(${currentPageNum + 1})">หน้าถัดไป →</button>`;
+    }
+
+    // Bottom only shows page navigation; info + per-page is already on header
+
+    paginationDiv.innerHTML = html;
+}
+
+function setHistoryPage(page) {
+    const limit = historyLimit;
+    const totalPages = Math.max(1, Math.ceil(historyTotal / limit));
+    const safePage = Math.min(totalPages, Math.max(1, page));
+    historyOffset = (safePage - 1) * limit;
+    loadHistory();
+}
+
+function setHistoryLimit(limit) {
+    const parsed = Math.max(1, Math.min(500, parseInt(limit, 10) || 10));
+    historyLimit = parsed;
+    historyOffset = 0;
+    loadHistory();
 }
 
 // ===== Session Heartbeat =====

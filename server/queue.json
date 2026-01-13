@@ -1,76 +1,124 @@
 {
   "songs": [
     {
-      "id": "1768194758031",
+      "id": "1768326345417",
       "name": "โมสต์",
-      "songName": "\"Your Idol\" | Official Song Clip | KPop Demon Hunters | Sony Animation",
-      "link": "https://www.youtube.com/watch?v=cWppAbqm9I8",
-      "submittedAt": "2026-01-12T05:12:38.031Z",
+      "songName": "NO BATIDÃO",
+      "link": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC",
+      "submittedAt": "2026-01-13T17:45:45.417Z",
       "votes": {
         "up": 0,
         "down": 0
       },
       "status": "pending",
       "videoInfo": {
-        "videoId": "cWppAbqm9I8",
-        "title": "\"Your Idol\" | Official Song Clip | KPop Demon Hunters | Sony Animation",
-        "author": "Sony Pictures Animation",
-        "thumbnail": "https://img.youtube.com/vi/cWppAbqm9I8/mqdefault.jpg",
-        "thumbnailMedium": "https://img.youtube.com/vi/cWppAbqm9I8/mqdefault.jpg",
+        "videoId": "ZB0amc1TZ3Y",
+        "title": "NO BATIDÃO",
+        "author": "ZXKAI - Topic",
+        "thumbnail": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
         "platform": "youtube",
-        "duration": 119,
-        "url": "https://www.youtube.com/watch?v=cWppAbqm9I8"
+        "duration": 89,
+        "url": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC"
       },
-      "duration": 119,
+      "duration": 89,
       "isDuplicate": false
     },
     {
-      "id": "1768194777362",
+      "id": "1768327380297",
       "name": "โมสต์",
-      "songName": "ฤดูร้อน - PARADOX【OFFICIAL MV】",
-      "link": "https://www.youtube.com/watch?v=8k6C_3Q4S1o",
-      "submittedAt": "2026-01-12T05:12:57.362Z",
+      "songName": "From The Start",
+      "link": "https://www.youtube.com/watch?v=sTHhz9LXdjw&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=19&pp=gAQBiAQBsAgC",
+      "submittedAt": "2026-01-13T18:03:00.297Z",
       "votes": {
         "up": 0,
         "down": 0
       },
       "status": "pending",
       "videoInfo": {
-        "videoId": "8k6C_3Q4S1o",
-        "title": "ฤดูร้อน - PARADOX【OFFICIAL MV】",
-        "author": "GMM GRAMMY OFFICIAL",
-        "thumbnail": "https://img.youtube.com/vi/8k6C_3Q4S1o/mqdefault.jpg",
-        "thumbnailMedium": "https://img.youtube.com/vi/8k6C_3Q4S1o/mqdefault.jpg",
+        "videoId": "sTHhz9LXdjw",
+        "title": "From The Start",
+        "author": "-Prey - Topic",
+        "thumbnail": "https://img.youtube.com/vi/sTHhz9LXdjw/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/sTHhz9LXdjw/mqdefault.jpg",
         "platform": "youtube",
-        "duration": 232,
-        "url": "https://www.youtube.com/watch?v=8k6C_3Q4S1o"
+        "duration": 78,
+        "url": "https://www.youtube.com/watch?v=sTHhz9LXdjw&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=19&pp=gAQBiAQBsAgC"
       },
-      "duration": 232,
+      "duration": 78,
+      "isDuplicate": false
+    },
+    {
+      "id": "1768327701896",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "ผู้บ่าวเสื้อปุ๋ย - ดิด คิตตี้ [OFFICIAL MV]",
+      "link": "https://www.youtube.com/watch?v=xwy5XKS5mb4&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=20&pp=gAQBiAQBsAgC",
+      "submittedAt": "2026-01-13T18:08:21.896Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "xwy5XKS5mb4",
+        "title": "ผู้บ่าวเสื้อปุ๋ย - ดิด คิตตี้ [OFFICIAL MV]",
+        "author": "ดิด คิตตี้ official",
+        "thumbnail": "https://img.youtube.com/vi/xwy5XKS5mb4/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/xwy5XKS5mb4/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 271,
+        "url": "https://www.youtube.com/watch?v=xwy5XKS5mb4&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=20&pp=gAQBiAQBsAgC"
+      },
+      "duration": 271,
+      "isDuplicate": false
+    },
+    {
+      "id": "1768327708269",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "Two Different Worlds",
+      "link": "https://www.youtube.com/watch?v=D5MlJRboXd0&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=18&pp=gAQBiAQBsAgC",
+      "submittedAt": "2026-01-13T18:08:28.269Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "pending",
+      "videoInfo": {
+        "videoId": "D5MlJRboXd0",
+        "title": "Two Different Worlds",
+        "author": "KORUSE - Topic",
+        "thumbnail": "https://img.youtube.com/vi/D5MlJRboXd0/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/D5MlJRboXd0/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 141,
+        "url": "https://www.youtube.com/watch?v=D5MlJRboXd0&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=18&pp=gAQBiAQBsAgC"
+      },
+      "duration": 141,
       "isDuplicate": false
     }
   ],
   "currentSong": {
-    "id": "1768194106335",
-    "name": "โมสต์",
-    "songName": "ความเชื่อ",
-    "link": "https://www.youtube.com/watch?v=ff7ao5s0heQ",
-    "submittedAt": "2026-01-12T05:01:46.335Z",
+    "id": "1768326109595",
+    "name": "ไม่ระบุชื่อ",
+    "songName": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+    "link": "https://www.youtube.com/watch?v=puFt8Otb3Ao",
+    "submittedAt": "2026-01-13T17:41:49.595Z",
     "votes": {
-      "up": 1,
+      "up": 0,
       "down": 0
     },
     "status": "pending",
     "videoInfo": {
-      "videoId": "ff7ao5s0heQ",
-      "title": "ความเชื่อ",
-      "author": "Bodyslam - Topic",
-      "thumbnail": "https://img.youtube.com/vi/ff7ao5s0heQ/mqdefault.jpg",
-      "thumbnailMedium": "https://img.youtube.com/vi/ff7ao5s0heQ/mqdefault.jpg",
+      "videoId": "puFt8Otb3Ao",
+      "title": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+      "author": "YOUNGOHM",
+      "thumbnail": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+      "thumbnailMedium": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
       "platform": "youtube",
-      "duration": 297,
-      "url": "https://www.youtube.com/watch?v=ff7ao5s0heQ"
+      "duration": 310,
+      "url": "https://www.youtube.com/watch?v=puFt8Otb3Ao"
     },
-    "duration": 297,
+    "duration": 310,
     "isDuplicate": false
   }
 }

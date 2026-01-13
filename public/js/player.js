@@ -24,6 +24,46 @@ function updateConnectionStatus() {
     }
 }
 
+// ===== Render Lyrics with Active Line =====
+function ensureLyricsRendered(container, lyrics, cursor) {
+    if (!container) return;
+
+    const currentHash = container.getAttribute('data-lyrics-hash') || '';
+    const newHash = String(lyrics.length) + ':' + (lyrics.slice(0, 64) || '');
+
+    // Re-render only if lyrics changed or container has no lines
+    if (currentHash !== newHash || !container.querySelector('.lyrics-line')) {
+        const lines = String(lyrics || '').split(/\r?\n/);
+        container.innerHTML = lines.map((line, idx) => {
+            const text = line.trim() === '' ? '&nbsp;' : escapeHtml(line);
+            return `<div class="lyrics-line" data-index="${idx}" style="padding:6px 0; line-height:1.6;">${text}</div>`;
+        }).join('');
+        container.setAttribute('data-lyrics-hash', newHash);
+    }
+
+    // Highlight active line
+    const prev = container.querySelector('.lyrics-line.active');
+    if (prev) prev.classList.remove('active');
+    const active = container.querySelector(`.lyrics-line[data-index="${cursor}"]`);
+    if (active) {
+        active.classList.add('active');
+        // Visual emphasis if no CSS
+        active.style.background = 'rgba(99,102,241,0.12)';
+        active.style.borderLeft = '3px solid #6366f1';
+        // Smooth scroll into view (centered)
+        try { active.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    }
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 window.addEventListener('online', updateConnectionStatus);
 window.addEventListener('offline', updateConnectionStatus);
 
@@ -258,6 +298,15 @@ async function loadData() {
                 document.body.classList.remove('cinema-mode');
             }
 
+            const partyLights = document.getElementById('partyLights');
+            if (partyLights) {
+                if (currentData.playbackState && currentData.playbackState.partyMode) {
+                    partyLights.classList.add('active');
+                } else {
+                    partyLights.classList.remove('active');
+                }
+            }
+
             // Sync Volume
             if (tubePlayer && tubePlayer.setVolume && currentData.playbackState && currentData.playbackState.volume !== undefined) {
                 const currentVolume = tubePlayer.getVolume();
@@ -272,10 +321,17 @@ async function loadData() {
             const queueSection = document.getElementById('queueSection');
             const lyricsSection = document.getElementById('lyricsSection');
             const lyricsContent = document.getElementById('lyricsContent');
+            
             if (currentData.playbackState && currentData.playbackState.lyricsMode) {
                 if (queueSection) queueSection.classList.add('hidden');
                 if (lyricsSection) lyricsSection.classList.remove('hidden');
-                if (lyricsContent) lyricsContent.textContent = currentData.playbackState.currentLyrics || 'ไม่มีเนื้อเพลง...';
+                
+                // Render lyrics with active line highlight
+                if (lyricsContent) {
+                    const lyrics = (currentData.playbackState.currentLyrics || '').toString();
+                    const cursor = currentData.playbackState.lyricsCursor || 0;
+                    ensureLyricsRendered(lyricsContent, lyrics, cursor);
+                }
             } else {
                 if (queueSection) queueSection.classList.remove('hidden');
                 if (lyricsSection) lyricsSection.classList.add('hidden');
@@ -340,7 +396,7 @@ function updateUIDisplay(currentData, queueData, playedToday = 0) {
     const info = song.videoInfo || {};
     const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%230f0f19'/%3E%3Ctext x='50%25' y='50%25' font-family='Kanit' font-size='120' fill='%236366f1' text-anchor='middle' dy='40'%3E🎵%3C/text%3E%3C/svg%3E";
 
-    const thumbnail = info.thumbnail || placeholder;
+    const thumbnail = (info.thumbnail && typeof info.thumbnail === 'string') ? info.thumbnail : placeholder;
     const thumbnailEl = document.getElementById('npThumbnail');
     if (thumbnailEl) thumbnailEl.src = thumbnail;
     const bgBlurEl = document.getElementById('npBgBlur');
@@ -411,7 +467,7 @@ function renderMiniQueue(songs, playedToday = 0) {
     miniQueue.innerHTML = songs.map((song, index) => {
         const info = song.videoInfo || {};
         const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='270' viewBox='0 0 480 270'%3E%3Crect width='100%25' height='100%25' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' font-size='100' text-anchor='middle' dy='35'%3E🎵%3C/text%3E%3C/svg%3E";
-        const thumbnail = info.thumbnailMedium || info.thumbnail || placeholder;
+        const thumbnail = (info.thumbnailMedium && typeof info.thumbnailMedium === 'string') ? info.thumbnailMedium : (info.thumbnail && typeof info.thumbnail === 'string') ? info.thumbnail : placeholder;
 
         // Only animate if it's a new song AND not the very first time the page loads
         const isNew = !isFirstRender && !lastQueueIds.has(song.id);
@@ -444,7 +500,7 @@ function showNewSongAlert(song) {
     if (!alertOverlay || !alertRequester || !alertSongName || !infoCard) return;
 
     // Set content
-    alertRequester.textContent = `คุณ ${song.name || 'ไม่ระบุชื่อ'}`;
+    alertRequester.textContent = `คุณ${song.name || 'ไม่ระบุชื่อ'}`;
     alertSongName.textContent = song.songName;
 
     // Show alert and fade background content
@@ -484,6 +540,22 @@ document.addEventListener('dblclick', () => {
     }
 });
 
+// ===== Toggle Party Mode =====
+function togglePartyMode() {
+    const partyLights = document.getElementById('partyLights');
+    if (!partyLights) return;
+    
+    const isActive = partyLights.classList.contains('active');
+    
+    if (isActive) {
+        partyLights.classList.remove('active');
+        console.log('Party mode disabled');
+    } else {
+        partyLights.classList.add('active');
+        console.log('Party mode enabled');
+    }
+}
+
 // ===== Session Heartbeat =====
 (function startHeartbeat() {
     const sendPing = () => {
@@ -497,3 +569,46 @@ document.addEventListener('dblclick', () => {
     sendPing();
     setInterval(sendPing, 30000);
 })();
+
+// ===== Load Lyrics from Server =====
+async function loadLyricsFromServer() {
+    try {
+        const response = await fetch('/api/lyrics');
+        const data = await response.json();
+        
+        const lyricsContent = document.getElementById('lyricsContent');
+        if (lyricsContent) {
+            if (data.currentLyrics && data.currentLyrics.trim()) {
+                lyricsContent.textContent = data.currentLyrics;
+            } else {
+                lyricsContent.textContent = 'ไม่มีเนื้อเพลงสำหรับเพลงนี้...';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading lyrics:', error);
+        const lyricsContent = document.getElementById('lyricsContent');
+        if (lyricsContent) {
+            lyricsContent.textContent = 'ไม่สามารถโหลดเนื้อเพลง...';
+        }
+    }
+}
+
+// ===== Toggle Lyrics Mode =====
+function toggleLyricsMode() {
+    const queueSection = document.getElementById('queueSection');
+    const lyricsSection = document.getElementById('lyricsSection');
+    
+    if (!queueSection || !lyricsSection) return;
+    
+    const isLyricsMode = lyricsSection.classList.contains('hidden');
+    
+    if (isLyricsMode) {
+        // Switch to lyrics
+        queueSection.classList.add('hidden');
+        lyricsSection.classList.remove('hidden');
+    } else {
+        // Switch to queue
+        queueSection.classList.remove('hidden');
+        lyricsSection.classList.add('hidden');
+    }
+}

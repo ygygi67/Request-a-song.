@@ -611,6 +611,45 @@
         body.hide-cursor {
             display: none !important;
         }
+
+        /* Party Lights */
+        .party-lights {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            mix-blend-mode: screen;
+        }
+
+        .party-lights.active {
+            opacity: 1;
+        }
+
+        .light {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .light:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .light:nth-child(2) { top: 10%; right: 10%; animation-delay: 0.2s; }
+        .light:nth-child(3) { bottom: 20%; left: 15%; animation-delay: 0.4s; }
+        .light:nth-child(4) { bottom: 30%; right: 15%; animation-delay: 0.6s; }
+        .light:nth-child(5) { top: 40%; left: 50%; transform: translateX(-50%); animation-delay: 0.8s; }
+        .light:nth-child(6) { bottom: 40%; right: 50%; transform: translateX(50%); animation-delay: 1s; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
     </style>
     <script src="https://www.youtube.com/iframe_api"></script>
 </head>
@@ -619,6 +658,16 @@
     <div id="connectionWarning" class="connection-warning">⚠️ การเชื่อมต่อขัดข้อง -
         กำลังพยายามจัดตั้งการเชื่อมต่อใหม่...</div>
     <div class="dynamic-background"></div>
+    <div class="party-lights" id="partyLights">
+        <div class="light" style="background: linear-gradient(45deg, #ff6b6b, #4ecdc4);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #4ecdc4, #45b7d1);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #45b7d1, #96ceb4);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #96ceb4, #ff6b6b);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #ff6b6b, #f7dc6f);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #f7dc6f, #4ecdc4);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #4ecdc4, #45b7d1);"></div>
+        <div class="light" style="background: linear-gradient(45deg, #45b7d1, #96ceb4);"></div>
+    </div>
     <div class="player-container">
         <!-- Now Playing Left (Cinema) -->
         <div class="now-playing" id="nowPlaying">
@@ -661,14 +710,17 @@
                     </div>
 
                     <div class="requester-info" id="requesterInfo">
-                        ขอโดย: <strong id="requesterName">-</strong>
+                        ขอโดย : <strong id="requesterName">-</strong>
                     </div>
                 </div>
             </div>
 
             <!-- Queue Preview -->
             <div class="queue-preview" id="queueSection">
-                <div class="queue-preview-title" id="queueHeaderTitle">🎶 เพลงถัดไป </div>
+                <div class="queue-preview-title">
+                    🎶 เพลงถัดไป 
+                    </button>
+                </div>
                 <div class="mini-queue" id="miniQueue">
                     <!-- Will be populated by JS -->
                 </div>
@@ -676,7 +728,12 @@
 
             <!-- Lyrics Section (Alternative to Queue) -->
             <div class="queue-preview hidden" id="lyricsSection">
-                <div class="queue-preview-title">📝 เนื้อเพลง (Lyrics)</div>
+                <div class="queue-preview-title">
+                    📝 เนื้อเพลง (Lyrics)
+                    <button class="btn btn-icon btn-secondary" onclick="toggleLyricsMode()" title="สลับแสดงเนื้อเพลง/คิว" style="margin-left: 10px; font-size: 0.8rem;">
+                        🎶
+                    </button>
+                </div>
                 <div id="lyricsContent"
                     style="padding: 1.5rem; font-size: 1.2rem; line-height: 1.8; color: var(--text-secondary); height: 100%; overflow-y: auto; white-space: pre-wrap; font-weight: 400; text-align: center;">
                     กำลังรอเนื้อเพลง...
