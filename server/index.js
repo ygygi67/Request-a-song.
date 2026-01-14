@@ -80,6 +80,7 @@ if (!cache.has('playbackState')) {
         cinemaMode: false,
         partyMode: false,
         lyricsMode: false,
+        locationEnabled: false,
         currentLyrics: '',
         lyricsCursor: 0,
         volume: 100,
@@ -795,15 +796,22 @@ app.get('/api/history', (req, res) => {
 });
 
 // Get playback stats (counts per day)
-app.get('/api/stats', (req, res) => {
+app.get('/api/history', (req, res) => {
+    const { date } = req.query;
     const history = cache.get('history') || {};
-    const stats = {};
-
-    Object.keys(history).forEach(date => {
-        stats[date] = history[date].length;
-    });
-
-    res.json(stats);
+    
+    if (date) {
+        // Return songs for specific date
+        const songs = history[date] || [];
+        res.json(songs);
+    } else {
+        // Return all history dates with counts
+        const stats = {};
+        Object.keys(history).forEach(date => {
+            stats[date] = history[date].length;
+        });
+        res.json(stats);
+    }
 });
 
 // Validate link
@@ -891,6 +899,23 @@ app.post('/api/admin/party', (req, res) => {
     res.json({ success: true, partyMode: newState.partyMode });
 });
 
+// Toggle Location Tracking
+app.post('/api/admin/location', (req, res) => {
+    const { adminKey } = req.body;
+    if (adminKey !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const currentState = cache.get('playbackState') || {};
+    const newState = {
+        ...currentState,
+        locationEnabled: !currentState.locationEnabled
+    };
+    cache.set('playbackState', newState);
+
+    res.json({ success: true, locationEnabled: newState.locationEnabled });
+});
+
 // Search YouTube
 app.get('/api/search/youtube', async (req, res) => {
     try {
@@ -912,12 +937,17 @@ app.get('/api/search/youtube', async (req, res) => {
 app.get('/api/stats', (req, res) => {
     const history = cache.get('history') || {};
     const stats = {};
+    let totalPlayed = 0;
+    const daily = {};
 
     Object.keys(history).forEach(date => {
-        stats[date] = history[date].length;
+        const count = history[date].length;
+        stats[date] = count;
+        totalPlayed += count;
+        daily[date] = { played: count };
     });
 
-    res.json(stats);
+    res.json({ stats, totalPlayed, daily });
 });
 
 // Admin login

@@ -425,7 +425,7 @@ async function handleSubmit(e) {
     // Submit
     try {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> กำลังส่ง...';
+        submitBtn.innerHTML = '<span class="spinner" style="width:20px;height:20px;border-width:2px;"></span> <span>กำลังส่ง...</span>';
 
         const response = await fetch(`${API_BASE}/api/songs`, {
             method: 'POST',

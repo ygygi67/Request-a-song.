@@ -9,6 +9,60 @@ let songDuration = 0;
 let localLastInteraction = 0; // Track last processed interaction
 let alertTimer = null; // Timer for hiding new song alert
 let isOffline = false;
+let currentLocation = null; // Store current location
+
+// ===== Location Tracking =====
+async function getCurrentLocation() {
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000 // 5 minutes cache
+            });
+        });
+        
+        currentLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+        };
+        
+        updateLocationMap();
+        return currentLocation;
+    } catch (error) {
+        console.error('Error getting location:', error);
+        // Fallback to Bangkok coordinates
+        currentLocation = { lat: 13.7563, lng: 100.5018 };
+        updateLocationMap();
+        return currentLocation;
+    }
+}
+
+function updateLocationMap() {
+    const mapFrame = document.getElementById('mapFrame');
+    const locationText = document.getElementById('locationText');
+    const locationLoading = document.getElementById('locationLoading');
+    
+    if (!mapFrame || !locationText || !locationLoading) return;
+    
+    if (currentLocation) {
+        // Update map iframe with current location
+        mapFrame.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.123!2d${currentLocation.lng}!3d${currentLocation.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM${currentLocation.lat}%2C${currentLocation.lng}!5e0!3m2!1sen!2sth!4v1494950647!5m2!1sen!2sth`;
+        
+        // Update location text
+        locationText.textContent = `พิกัด: ${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}`;
+        
+        // Hide loading
+        locationLoading.style.display = 'none';
+    }
+}
+
+// Initialize location tracking
+if (navigator.geolocation) {
+    getCurrentLocation();
+    // Update location every 5 minutes
+    setInterval(getCurrentLocation, 300000);
+}
 
 // ===== Connection Monitoring =====
 function updateConnectionStatus() {
@@ -353,6 +407,21 @@ async function loadData() {
                     }
                     // Hide when paused to satisfy user request "hide when not playing"
                     if (videoWrapper) videoWrapper.classList.remove('active');
+                }
+            }
+
+            // Sync Location Mode
+            const locationInfo = document.getElementById('locationInfo');
+            if (locationInfo) {
+                const locationEnabled = currentData.playbackState && currentData.playbackState.locationEnabled;
+                if (locationEnabled) {
+                    locationInfo.style.display = 'block';
+                    // Start location tracking if not already started
+                    if (!currentLocation) {
+                        getCurrentLocation();
+                    }
+                } else {
+                    locationInfo.style.display = 'none';
                 }
             }
         } else {

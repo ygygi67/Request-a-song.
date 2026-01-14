@@ -1329,5 +1329,32 @@
       "isDuplicate": false,
       "playedAt": "2026-01-13T18:05:39.356Z"
     }
+  ],
+  "2026-01-14": [
+    {
+      "id": "1768326109595",
+      "name": "ไม่ระบุชื่อ",
+      "songName": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+      "link": "https://www.youtube.com/watch?v=puFt8Otb3Ao",
+      "submittedAt": "2026-01-13T17:41:49.595Z",
+      "votes": {
+        "up": 0,
+        "down": 0
+      },
+      "status": "completed",
+      "videoInfo": {
+        "videoId": "puFt8Otb3Ao",
+        "title": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
+        "author": "YOUNGOHM",
+        "thumbnail": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+        "thumbnailMedium": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+        "platform": "youtube",
+        "duration": 310,
+        "url": "https://www.youtube.com/watch?v=puFt8Otb3Ao"
+      },
+      "duration": 310,
+      "isDuplicate": false,
+      "playedAt": "2026-01-14T00:09:32.724Z"
+    }
   ]
 }

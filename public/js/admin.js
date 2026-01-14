@@ -51,6 +51,28 @@
     }, 400);
   };
 
+  // Clear entire queue
+  window.clearQueue = async function(){
+    if (!confirm('ต้องการล้างคิวทั้งหมดหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
+    try{
+      const key = getAdminKey();
+      if (!key) return;
+      const res = await fetch('/api/queue/clear',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: key })
+      });
+      if (handleUnauthorized(res)) return;
+      if (res.ok){
+        showToast('🗑️ ล้างคิวทั้งหมดแล้ว','success');
+        loadQueue();
+        loadCurrentSong();
+      } else {
+        const data = await res.json().catch(()=>({}));
+        showToast(data.error || 'ล้างคิวไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('clearQueue error:', e); }
+  };
+
   // Reject a specific song from queue list
   window.rejectSong = async function(songId){
     if (!songId) return;
@@ -112,6 +134,31 @@
         showToast('สลับโหมดปาร์ตี้ไม่สำเร็จ','error');
       }
     }catch(e){ console.error('Party error:', e); }
+  };
+
+  // ===== Location Tracking Toggle =====
+  window.toggleLocationTracking = async function(){
+    try{
+      const res = await fetch('/api/admin/location',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ adminKey: getAdminKey() })
+      });
+      if (handleUnauthorized(res)) return;
+      const data = await res.json();
+      if (res.ok) {
+        const enabled = data.locationEnabled;
+        showToast(enabled ? '📍 เปิดแสดงตำแหน่งแล้ว' : '📍 ปิดแสดงตำแหน่งแล้ว','success');
+        
+        // Update button state
+        const btn = document.getElementById('locationToggleBtn');
+        if (btn) {
+          btn.textContent = enabled ? '📍 ปิดตำแหน่ง' : '📍 เปิดตำแหน่ง';
+          btn.className = enabled ? 'btn btn-danger btn-sm' : 'btn btn-secondary btn-sm';
+        }
+      } else {
+        showToast('สลับตำแหน่งไม่สำเร็จ','error');
+      }
+    }catch(e){ console.error('toggleLocationTracking error:', e); }
   };
 
   // ===== Party FX (Confetti / Pulse / Flash) =====
@@ -182,32 +229,31 @@
 
   // ===== Lyrics =====
   function ensureLyricsModal(){
-    if (document.getElementById('lyricsModal')) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'lyricsModal';
-    overlay.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3>📝 ใส่เนื้อเพลง</h3>
-          <button class="modal-close" onclick="closeLyricsModal()">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>วาง/พิมพ์เนื้อเพลงที่นี่ (แต่ละบรรทัดเป็น 1 ท่อน)</label>
-            <textarea id="lyricsTextarea" rows="10" style="width:100%; padding:10px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white;"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeLyricsModal()">ยกเลิก</button>
-          <button class="btn btn-primary" onclick="saveLyrics()">บันทึก</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
+    // Use existing modal from HTML instead of creating new one
+    const modal = document.getElementById('lyricsModal');
+    if (!modal) {
+      console.error('Lyrics modal not found in HTML');
+      return;
+    }
   }
 
-  window.openLyricsModal = function(){ ensureLyricsModal(); const m = document.getElementById('lyricsModal'); if (m) m.classList.add('active'); };
-  window.closeLyricsModal = function(){ const m = document.getElementById('lyricsModal'); if (m) m.classList.remove('active'); };
+  window.openLyricsModal = function(){ 
+    ensureLyricsModal(); 
+    const m = document.getElementById('lyricsModal'); 
+    if (m) {
+      m.classList.add('active');
+      m.style.display = 'flex';
+      m.style.opacity = '1';
+    }
+  };
+  window.closeLyricsModal = function(){ 
+    const m = document.getElementById('lyricsModal'); 
+    if (m) {
+      m.classList.remove('active');
+      m.style.display = 'none';
+      m.style.opacity = '0';
+    }
+  };
 
   window.saveLyrics = async function(){
     const lyrics = (document.getElementById('lyricsTextarea')?.value || '').trim();
@@ -255,7 +301,7 @@
         const b = document.createElement('button'); b.id='btnLyricsInput'; b.className='btn btn-icon btn-secondary'; b.title='ใส่เนื้อเพลงเอง'; b.textContent='🖊️'; b.onclick = window.openLyricsModal; target.insertBefore(b, target.firstChild.nextSibling);
       }
       if (!document.getElementById('btnLyricsNext')){
-        const b = document.createElement('button'); b.id='btnLyricsNext'; b.className='btn btn-icon btn-secondary'; b.title='ไปท่อน/บรรทัดถัดไปของเนื้อเพลง'; b.textContent='⏭️📝'; b.onclick = window.nextLyricsLine; target.insertBefore(b, target.firstChild.nextSibling);
+        const b = document.createElement('button'); b.id='btnLyricsNext'; b.className='btn btn-icon btn-secondary'; b.title='ไปท่อน/บรรทัดถัดไปของเนื้อเพลง'; b.textContent='⏭️'; b.onclick = window.nextLyricsLine; target.insertBefore(b, target.firstChild.nextSibling);
       }
       ensureLyricsModal();
       return true;
@@ -331,25 +377,8 @@
 
   // ===== Announcement Copy Box (for MC/Host) =====
   function ensureAnnouncementBox(){
-    let box = document.getElementById('announceBox');
-    if (box) return box;
-    const header = document.querySelector('.admin-header');
-    if (!header) return null;
-    box = document.createElement('div');
-    box.id = 'announceBox';
-    box.style.cssText = 'margin-left:auto; max-width:540px; display:flex; gap:8px; align-items:center;';
-    box.innerHTML = `
-      <textarea id="announceText" rows="2" style="flex:1; padding:8px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white; font-family:inherit;" placeholder="ข้อความประกาศจะขึ้นอัตโนมัติเมื่อมีเพลงใหม่"></textarea>
-      <button class="btn btn-secondary" id="copyAnnounceBtn">คัดลอก</button>
-    `;
-    header.appendChild(box);
-    const btn = box.querySelector('#copyAnnounceBtn');
-    btn.addEventListener('click', ()=>{
-      const ta = document.getElementById('announceText');
-      if (!ta) return;
-      ta.select();
-      try { document.execCommand('copy'); showToast('คัดลอกแล้ว', 'success'); } catch(_) {}
-    });
+    // Box already exists in HTML admin-stats section, just return
+    const box = document.getElementById('announceCard');
     return box;
   }
 
@@ -365,7 +394,7 @@
     const playAt = first?.estimatedPlayTime ? new Date(first.estimatedPlayTime) : new Date(Date.now()+ (etaMin*60000));
     const hh = String(playAt.getHours()).padStart(2,'0');
     const mm = String(playAt.getMinutes()).padStart(2,'0');
-    ta.value = `คุณ ${name} ได้ขอเพลง "${title}" จะเล่นในอีก ${etaMin} นาที เวลา ${hh}:${mm} น.`;
+    ta.value = `คุณ${name}ได้ขอเพลง "${title}" จะเล่นในอีก ${etaMin} นาที เวลา ${hh}:${mm} น.`;
   }
 
   // ===== Now Playing + Next =====
@@ -504,35 +533,276 @@
     }catch(e){ console.error('Stats error:', e); }
   }
 
-  function renderStats(stats){
-    const list = document.getElementById('statsList');
-    if (!list) return;
-    const entries = Object.entries(stats).sort((a,b)=> b[0].localeCompare(a[0]));
-    if (entries.length === 0){
-      list.innerHTML = '<p class="text-center text-muted">ยังไม่มีสถิติ</p>';
-      return;
-    }
-    list.innerHTML = entries.map(([date,count])=>{
+  function renderStats(stats = {}) {
+    const statsContainer = document.getElementById('statsContainer');
+    if (!statsContainer) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayCount = stats.daily?.[today]?.played || 0;
+    const totalPlayed = stats.totalPlayed || 0;
+
+    // Create stats cards for each day
+    const sortedDates = Object.keys(stats.daily || {}).sort().reverse();
+    const statsCards = sortedDates.slice(0, 7).map(date => {
+      const count = stats.daily[date].played;
+      const isToday = date === today;
       return `
-        <div class="history-item" style="cursor:pointer" onclick="openHistoryFor('${date}')">
-          <div class="history-info">
-            <div class="history-title">${date}</div>
-            <div class="history-meta">จำนวนที่เล่น: ${count}</div>
-          </div>
-        </div>`;
+        <div class="stat-card clickable-stat" 
+             data-date="${date}" 
+             title="${isToday ? 'คลิกเพื่อดูรายการเพลงวันนี้' : `${date} (คลิกดูรายการเพลง)`}">
+          <h3>${isToday ? '📅 เล่นแล้ววันนี้' : '📊 ' + date}</h3>
+          <p class="stat-number">${count}</p>
+          <small>คลิกดูรายการ</small>
+        </div>
+      `;
     }).join('');
+
+    // Add total stats card - make it clickable too
+    const totalCard = `
+      <div class="stat-card clickable-stat" 
+           data-date="all" 
+           title="คลิกเพื่อดูรายการเพลงทั้งหมด">
+        <h3>🎵 สถิติทั้งหมด</h3>
+        <p class="stat-number">${totalPlayed}</p>
+        <small>คลิกดูรายการ</small>
+      </div>
+    `;
+
+    statsContainer.innerHTML = statsCards + totalCard;
+
+    // Add click handlers for all stat cards
+    setTimeout(() => {
+      const cards = statsContainer.querySelectorAll('.stat-card[data-date]');
+      console.log('Found stat cards:', cards.length);
+      console.log('Cards:', cards);
+      
+      // Remove existing listeners first
+      cards.forEach(card => {
+        card.replaceWith(card.cloneNode(true));
+      });
+      
+      // Get fresh references
+      const freshCards = statsContainer.querySelectorAll('.stat-card[data-date]');
+      freshCards.forEach((card, index) => {
+        console.log(`Card ${index}:`, card, 'data-date:', card.dataset.date);
+        card.style.cursor = 'pointer';
+        card.onclick = function(e) {
+          console.log('Card clicked!');
+          e.preventDefault();
+          e.stopPropagation();
+          const date = card.dataset.date;
+          console.log('Clicked date:', date);
+          if (date) {
+            openHistoryModal(date);
+          }
+        };
+      });
+    }, 200);
+
+    // Re-attach copy button listener for announcement box in admin-stats
+    const copyBtn = document.getElementById('copyAnnounceBtn');
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const ta = document.getElementById('announceText');
+        if (!ta) return;
+        ta.select();
+        try { 
+          document.execCommand('copy'); 
+          showToast('คัดลอกแล้ว', 'success'); 
+        } catch(_) {
+          showToast('คัดลอกไม่สำเร็จ', 'error');
+        }
+      };
+    }
+
+    // Update announcement box in admin-stats section
+    updateAnnouncementFromSongs([]);
   }
 
-  window.openHistoryFor = function(date){
-    const sel = document.getElementById('historyDateFilter');
-    if (sel){ sel.value = date; }
+  // ===== History Modal =====
+  function ensureHistoryModal(){
+    if (document.getElementById('historyModal')) return;
+    // Use existing modal from HTML instead of creating new one
     const modal = document.getElementById('historyModal');
-    if (modal) modal.classList.add('active');
-    // If main.js history loader is available, it will pick the date filter
-    if (typeof window.loadHistory === 'function') {
-      try { window.loadHistory(); } catch(_){}
+    if (!modal) {
+      console.error('History modal not found in HTML');
+      return;
     }
+    
+    // Add date input if not exists
+    if (!modal.querySelector('#historyDateFilter')) {
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.id = 'historyDateFilter';
+      dateInput.style.cssText = 'width:100%; padding:8px; border-radius:8px; background: rgba(0,0,0,0.3); border:1px solid var(--border-color); color:white; margin-bottom:12px;';
+      dateInput.addEventListener('change', (e) => {
+        loadHistorySongs(e.target.value);
+      });
+      
+      const body = modal.querySelector('.modal-body');
+      if (body) {
+        body.insertBefore(dateInput, body.firstChild);
+      }
+    }
+    
+    // Add song list container if not exists
+    if (!modal.querySelector('#historySongList')) {
+      const songList = document.createElement('div');
+      songList.id = 'historySongList';
+      songList.style.cssText = 'max-height:300px; overflow-y:auto;';
+      const body = modal.querySelector('.modal-body');
+      if (body) {
+        body.appendChild(songList);
+      }
+    }
+  }
+
+  window.openHistoryModal = function(date){
+    console.log('openHistoryModal called with date:', date);
+    const modal = document.getElementById('historyModal');
+    if (!modal) {
+      console.error('History modal not found');
+      return;
+    }
+    
+    // Clear existing content and add our elements
+    const body = modal.querySelector('.modal-body');
+    if (body) {
+      body.innerHTML = `
+        <div id="historySongList" style="max-height: 450px; overflow-y: auto; padding-right: 15px;">
+          <div style="text-align: center; padding: 50px; color: var(--text-muted);">
+            <div style="font-size: 4rem; margin-bottom: 15px; animation: pulse 2s infinite;">🎵</div>
+            <div style="font-size: 1.2rem; font-weight: 500;">กำลังโหลดข้อมูล...</div>
+          </div>
+        </div>
+      `;
+      
+      // Load history directly without date picker
+      loadHistorySongs(date);
+    }
+    
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    console.log('Modal classes:', modal.className);
+    console.log('Modal style:', modal.style.cssText);
+    console.log('Modal body HTML:', body?.innerHTML?.substring(0, 200));
   };
+
+  window.closeHistoryModal = function(){
+    const modal = document.getElementById('historyModal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  // Store current songs globally for sorting
+  let currentHistorySongs = [];
+
+  async function loadHistorySongs(date){
+    try{
+      let res;
+      if (date === 'all') {
+        // Load all history
+        res = await fetch(`/api/history`);
+      } else {
+        // Load history for specific date
+        res = await fetch(`/api/history?date=${encodeURIComponent(date)}`);
+      }
+      
+      if (!res.ok) throw new Error('Failed to load history');
+      const songs = await res.json();
+      
+      // Store songs for sorting
+      currentHistorySongs = songs || [];
+      
+      const songList = document.getElementById('historySongList');
+      if (!songList) return;
+      
+      if (!currentHistorySongs || currentHistorySongs.length === 0) {
+        songList.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📭</div>
+            <div style="font-size: 1.1rem;">${date === 'all' ? 'ไม่มีประวัติการเล่นเพลง' : 'ไม่มีประวัติการเล่นเพลงในวันนี้'}</div>
+            <div style="font-size: 0.9rem; margin-top: 5px;">${date === 'all' ? 'ยังไม่มีใคนขอเพลงเลย' : 'ลองเลือกวันอื่นดูสิ'}</div>
+          </div>
+        `;
+        return;
+      }
+      
+      renderHistorySongs();
+      
+    }catch(e){
+      console.error('loadHistorySongs error:', e);
+      const songList = document.getElementById('historySongList');
+      if (songList) {
+        songList.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--danger);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">❌</div>
+            <div>โหลดข้อมูลไม่สำเร็จ</div>
+          </div>
+        `;
+      }
+    }
+  }
+
+  function renderHistorySongs() {
+    const songList = document.getElementById('historySongList');
+    if (!songList) return;
+    
+    songList.innerHTML = currentHistorySongs.map((song, index) => `
+        <div class="history-item" style="display: flex; gap: 15px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 12px; transition: all 0.2s ease; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="flex-shrink: 0;">
+            ${song.thumbnail ? 
+              `<img src="${song.thumbnail}" alt="" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover;">` :
+              `<div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🎵</div>`
+            }
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 1rem; font-weight: 500; color: white; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${escapeHtml(song.songName || song.videoInfo?.title || '-')}
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">
+              👤 ${escapeHtml(song.name || '-')}
+            </div>
+            <div style="font-size: 0.75rem; color: #888; display: flex; gap: 15px;">
+              <span>🕐 ${new Date(song.playedAt || song.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>⏱️ ${Math.floor((song.duration || 0) / 60)}:${String(Math.floor((song.duration || 0) % 60)).padStart(2, '0')}</span>
+            </div>
+          </div>
+          <div style="flex-shrink: 0;">
+            <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-top: 25px;"></div>
+          </div>
+        </div>
+      `).join('');
+  }
+
+  function sortHistorySongs() {
+    const sortBy = document.getElementById('historySortBy').value;
+    console.log('Sorting by:', sortBy);
+    
+    if (!currentHistorySongs || currentHistorySongs.length === 0) return;
+    
+    switch(sortBy) {
+      case 'time-desc':
+        currentHistorySongs.sort((a, b) => new Date(b.playedAt || b.timestamp) - new Date(a.playedAt || a.timestamp));
+        break;
+      case 'time-asc':
+        currentHistorySongs.sort((a, b) => new Date(a.playedAt || a.timestamp) - new Date(b.playedAt || b.timestamp));
+        break;
+      case 'name-asc':
+        currentHistorySongs.sort((a, b) => (a.songName || a.videoInfo?.title || '').localeCompare(b.songName || b.videoInfo?.title || '', 'th'));
+        break;
+      case 'name-desc':
+        currentHistorySongs.sort((a, b) => (b.songName || b.videoInfo?.title || '').localeCompare(a.songName || a.videoInfo?.title || '', 'th'));
+        break;
+      case 'requester-asc':
+        currentHistorySongs.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'th'));
+        break;
+    }
+    
+    renderHistorySongs();
+  }
+
+  // Listen to date filter change - remove since we handle it in openHistoryModal
 
   let statsTimer = null;
   function startStatsRefresh(){
@@ -762,9 +1032,22 @@ window.openHistory = function(){
   const m = document.getElementById('historyModal');
   if (m) m.classList.add('active');
 };
+window.closeHistoryModal = function(){
+  const modal = document.getElementById('historyModal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.style.opacity = '0';
+  }
+};
+
 window.closeHistory = function(){
-  const m = document.getElementById('historyModal');
-  if (m) m.classList.remove('active');
+  const modal = document.getElementById('historyModal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    modal.style.opacity = '0';
+  }
 };
 
 // Logout handler (global)
@@ -783,7 +1066,11 @@ window.skipSong = window.skipSong || function(){ console.warn('skipSong not read
 window.toggleRepeat = window.toggleRepeat || function(){ console.warn('toggleRepeat not ready'); };
 window.adjustTime = window.adjustTime || function(){ console.warn('adjustTime not ready'); };
 window.toggleCinema = window.toggleCinema || function(){ console.warn('toggleCinema not ready'); };
+window.clearQueue = window.clearQueue || function(){ console.warn('clearQueue not ready'); };
 window.rejectSong = window.rejectSong || function(){ console.warn('rejectSong not ready'); };
+window.toggleCinema = window.toggleCinema || function(){ console.warn('toggleCinema not ready'); };
+window.togglePartyMode = window.togglePartyMode || function(){ console.warn('togglePartyMode not ready'); };
+window.toggleLocationTracking = window.toggleLocationTracking || function(){ console.warn('toggleLocationTracking not ready'); };
 window.ensureAnnouncementBox = window.ensureAnnouncementBox || function(){ console.warn('ensureAnnouncementBox not ready'); };
 
 })();

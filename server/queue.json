@@ -1,30 +1,6 @@
 {
   "songs": [
     {
-      "id": "1768326345417",
-      "name": "โมสต์",
-      "songName": "NO BATIDÃO",
-      "link": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC",
-      "submittedAt": "2026-01-13T17:45:45.417Z",
-      "votes": {
-        "up": 0,
-        "down": 0
-      },
-      "status": "pending",
-      "videoInfo": {
-        "videoId": "ZB0amc1TZ3Y",
-        "title": "NO BATIDÃO",
-        "author": "ZXKAI - Topic",
-        "thumbnail": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
-        "thumbnailMedium": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
-        "platform": "youtube",
-        "duration": 89,
-        "url": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC"
-      },
-      "duration": 89,
-      "isDuplicate": false
-    },
-    {
       "id": "1768327380297",
       "name": "โมสต์",
       "songName": "From The Start",
@@ -98,27 +74,27 @@
     }
   ],
   "currentSong": {
-    "id": "1768326109595",
-    "name": "ไม่ระบุชื่อ",
-    "songName": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
-    "link": "https://www.youtube.com/watch?v=puFt8Otb3Ao",
-    "submittedAt": "2026-01-13T17:41:49.595Z",
+    "id": "1768326345417",
+    "name": "โมสต์",
+    "songName": "NO BATIDÃO",
+    "link": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC",
+    "submittedAt": "2026-01-13T17:45:45.417Z",
     "votes": {
       "up": 0,
       "down": 0
     },
     "status": "pending",
     "videoInfo": {
-      "videoId": "puFt8Otb3Ao",
-      "title": "YOUNGOHM - ใจฉันตามเธอไป (Official Video)",
-      "author": "YOUNGOHM",
-      "thumbnail": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
-      "thumbnailMedium": "https://img.youtube.com/vi/puFt8Otb3Ao/mqdefault.jpg",
+      "videoId": "ZB0amc1TZ3Y",
+      "title": "NO BATIDÃO",
+      "author": "ZXKAI - Topic",
+      "thumbnail": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
+      "thumbnailMedium": "https://img.youtube.com/vi/ZB0amc1TZ3Y/mqdefault.jpg",
       "platform": "youtube",
-      "duration": 310,
-      "url": "https://www.youtube.com/watch?v=puFt8Otb3Ao"
+      "duration": 89,
+      "url": "https://www.youtube.com/watch?v=ZB0amc1TZ3Y&list=PLClZz0mM3CSkzq9OPkgpqjlosUqxtO78m&index=17&pp=gAQBiAQBsAgC"
     },
-    "duration": 310,
+    "duration": 89,
     "isDuplicate": false
   }
 }

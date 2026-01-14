@@ -687,6 +687,16 @@ input::placeholder {
     width: 56px;
     height: 56px;
     font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.player-controls .btn-icon:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.player-controls .btn-icon:active {
+    transform: scale(0.95);
 }
 
 .player-controls .btn-play {
@@ -727,6 +737,14 @@ input::placeholder {
     font-size: 0.875rem;
 }
 
+/* Stats Container */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
 /* ===== Admin ===== */
 .admin-header {
     display: flex;
@@ -748,6 +766,14 @@ input::placeholder {
     border-radius: var(--radius-md);
     padding: 1.5rem;
     text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--accent-primary);
 }
 
 .stat-value {
@@ -891,36 +917,41 @@ input::placeholder {
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 5000;
     opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
+.modal-overlay.active,
 .modal-overlay.show {
     opacity: 1;
-    visibility: visible;
 }
 
 .modal {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: 2rem;
+    background: #1e1e2d;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
     width: 90%;
-    max-width: 500px;
-    transform: scale(0.9);
-    transition: transform 0.3s ease;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    transform: translateY(20px);
+    transition: all 0.3s ease;
 }
 
+.modal-overlay.active .modal,
 .modal-overlay.show .modal {
-    transform: scale(1);
+    transform: translateY(0);
 }
 
 .modal-header {
@@ -1038,6 +1069,76 @@ input::placeholder {
 
     .admin-stats {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .player-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .player-controls .btn {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 1rem;
+    }
+
+    .volume-control {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .volume-control span {
+        margin-bottom: 0.5rem;
+    }
+
+    .volume-control input[type="number"] {
+        order: 2;
+        margin-bottom: 0.5rem;
+    }
+
+    .volume-control input[type="range"] {
+        order: 3;
+        width: 200px !important;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .card-header button {
+        width: 100%;
+    }
+
+    .modal {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .history-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .history-controls > div {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .history-controls select,
+    .history-controls input {
+        width: 100%;
+        max-width: none;
     }
 }
 
