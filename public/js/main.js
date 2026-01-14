@@ -14,7 +14,12 @@ const historyList = document.getElementById('historyList');
 const rejectedList = document.getElementById('rejectedList');
 const emptyQueue = document.getElementById('emptyQueue');
 const submitBtn = document.getElementById('submitBtn');
-const duplicateModal = document.getElementById('duplicateModal');
+let duplicateModal = null;
+
+// Initialize duplicateModal when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    duplicateModal = document.getElementById('duplicateModal');
+});
 
 // ===== State =====
 let names = [];
@@ -416,9 +421,9 @@ async function handleSubmit(e) {
 
     // Prepare request
     const requestData = {
-        name,
-        songName,
-        link,
+        name: name,
+        songName: songName,
+        link: link,
         videoInfo: selectedVideoInfo
     };
 
@@ -443,9 +448,17 @@ async function handleSubmit(e) {
         }
 
         if (!response.ok) {
+            console.log('Response not ok:', response.status, data);
             if (data.isDuplicate) {
+                console.log('Duplicate detected, showing modal');
                 pendingRequest = { ...requestData, confirmDuplicate: true };
-                duplicateModal.classList.add('show');
+                if (duplicateModal) {
+                    console.log('Modal element found:', duplicateModal);
+                    duplicateModal.classList.add('show');
+                    console.log('Modal classes after adding show:', duplicateModal.className);
+                } else {
+                    console.error('Modal element not found!');
+                }
             } else {
                 showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
             }
@@ -478,7 +491,9 @@ function resetForm() {
 
 // ===== Duplicate Modal =====
 function closeDuplicateModal() {
-    duplicateModal.classList.remove('show');
+    if (duplicateModal) {
+        duplicateModal.classList.remove('show');
+    }
     pendingRequest = null;
 }
 
@@ -486,10 +501,12 @@ async function confirmDuplicate() {
     if (!pendingRequest) return;
 
     try {
+        // Add confirmDuplicate: true to force submission
+        const forceRequest = { ...pendingRequest, confirmDuplicate: true };
         const response = await fetch(`${API_BASE}/api/songs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pendingRequest)
+            body: JSON.stringify(forceRequest)
         });
 
         if (response.ok) {
@@ -498,8 +515,11 @@ async function confirmDuplicate() {
             loadQueue();
         } else {
             const data = await response.json();
-            showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+            if (data.error) {
+                showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+            }
         }
+        closeDuplicateModal();
     } catch (error) {
         showToast('เกิดข้อผิดพลาด', 'error');
     }

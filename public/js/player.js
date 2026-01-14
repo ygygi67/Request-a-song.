@@ -57,6 +57,25 @@ function updateLocationMap() {
     }
 }
 
+function updateIdleLocationMap() {
+    const mapFrame = document.getElementById('idleMapFrame');
+    const locationText = document.getElementById('idleLocationText');
+    const locationLoading = document.getElementById('idleLocationLoading');
+    
+    if (!mapFrame || !locationText || !locationLoading) return;
+    
+    if (currentLocation) {
+        // Update map iframe with current location
+        mapFrame.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.123!2d${currentLocation.lng}!3d${currentLocation.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM${currentLocation.lat}%2C${currentLocation.lng}!5e0!3m2!1sen!2sth!4v1494950647!5m2!1sen!2sth`;
+        
+        // Update location text
+        locationText.textContent = `พิกัด: ${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}`;
+        
+        // Hide loading
+        locationLoading.style.display = 'none';
+    }
+}
+
 // Initialize location tracking
 if (navigator.geolocation) {
     getCurrentLocation();
@@ -412,6 +431,8 @@ async function loadData() {
 
             // Sync Location Mode
             const locationInfo = document.getElementById('locationInfo');
+            const idleLocationInfo = document.getElementById('idleLocationInfo');
+            
             if (locationInfo) {
                 const locationEnabled = currentData.playbackState && currentData.playbackState.locationEnabled;
                 if (locationEnabled) {
@@ -422,6 +443,18 @@ async function loadData() {
                     }
                 } else {
                     locationInfo.style.display = 'none';
+                }
+            }
+            
+            // Handle idle location display
+            if (idleLocationInfo) {
+                const locationEnabled = currentData.playbackState && currentData.playbackState.locationEnabled;
+                if (locationEnabled && !currentSong) {
+                    idleLocationInfo.style.display = 'block';
+                    // Update idle location map
+                    updateIdleLocationMap();
+                } else {
+                    idleLocationInfo.style.display = 'none';
                 }
             }
         } else {

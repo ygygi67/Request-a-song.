@@ -756,21 +756,39 @@
                 </div>
                 <div id="lyricsContent"
                     style="padding: 1.5rem; font-size: 1.2rem; line-height: 1.8; color: var(--text-secondary); height: 100%; overflow-y: auto; white-space: pre-wrap; font-weight: 400; text-align: center;">
-                    กำลังรอเนื้อเพลง...
+
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="npProgress" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-time">
+                            <span id="npCurrentTime">0:00</span>
+                            <span id="npDuration">0:00</span>
+                        </div>
+
+                        <div class="requester-info" id="requesterInfo">
+                            ขอโดย : <strong id="requesterName">-</strong>
+                        </div>
+
+                        <!-- Location Info -->
+                        <div class="location-info" id="locationInfo" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: none;">
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">📍 ตำแหน่งปัจจุบัน</div>
+                            <div id="locationMap" style="width: 100%; height: 150px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.3); position: relative;">
+                                <iframe id="mapFrame" 
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.123!2d100.123!3d13.456!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM13.456%2C100.123!5e0!3m2!1sen!2sth!4v1494950647!5m2!1sen!2sth" 
+                                    style="width: 100%; height: 100%; border: 0; border-radius: 8px;"
+                                    allowfullscreen=""
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade">
+                                </iframe>
+                                <div id="locationLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 0.9rem;">
+                                    🔄 กำลังโหลดแผนที่...
+                                </div>
+                            </div>
+                            <div id="locationText" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                                กำลังหาตำแหน่ง...
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Idle Message -->
-        <div class="idle-message hidden" id="idleMessage">
-            <div class="vinyl-record">💿</div>
-            <h2>รอเพลงจากคุณอยู่...</h2>
-            <p class="text-muted">ขอเพลงกันเข้ามาได้เลยนะ!</p>
-        </div>
-    </div>
-
-
-    <script src="js/player.js"></script>
-</body>
 
 </html>
