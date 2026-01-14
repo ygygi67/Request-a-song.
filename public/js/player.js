@@ -57,25 +57,6 @@ function updateLocationMap() {
     }
 }
 
-function updateIdleLocationMap() {
-    const mapFrame = document.getElementById('idleMapFrame');
-    const locationText = document.getElementById('idleLocationText');
-    const locationLoading = document.getElementById('idleLocationLoading');
-    
-    if (!mapFrame || !locationText || !locationLoading) return;
-    
-    if (currentLocation) {
-        // Update map iframe with current location
-        mapFrame.src = `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3875.123!2d${currentLocation.lng}!3d${currentLocation.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zM${currentLocation.lat}%2C${currentLocation.lng}!5e0!3m2!1sen!2sth!4v1494950647!5m2!1sen!2sth`;
-        
-        // Update location text
-        locationText.textContent = `พิกัด: ${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}`;
-        
-        // Hide loading
-        locationLoading.style.display = 'none';
-    }
-}
-
 // Initialize location tracking
 if (navigator.geolocation) {
     getCurrentLocation();
@@ -279,6 +260,238 @@ function detectOnlineMode() {
         badge.style.fontWeight = 'bold';
         badge.style.zIndex = '9999';
         badge.style.opacity = '0.5';
+        badge.style.pointerEvents = 'none';
+        badge.innerHTML = '🌐 Online Mode';
+        document.body.appendChild(badge);
+    }
+}
+
+// ===== Load Data =====
+async function loadData() {
+    try {
+        const [currentRes, queueRes, statsRes] = await Promise.all([
+            fetch('/api/songs/current'),
+            fetch('/api/songs'),
+            fetch('/api/stats')
+        ]);
+        setConnectionError(false);
+
+        const currentData = await currentRes.json();
+        const queueData = await queueRes.json();
+        let statsData = {};
+        try {
+            statsData = await statsRes.json();
+        } catch (e) { }
+
+        const todayAt = new Date().toISOString().split('T')[0];
+        const playedToday = (currentData.stats && currentData.stats.todayCount) || statsData[todayAt] || 0;
+
+        const newSong = currentData.current;
+        const newIsPlaying = currentData.isPlaying;
+        const videoWrapper = document.getElementById('videoWrapper');
+
+        // Handle song logic
+        if (newSong) {
+            // Check if player actually has THIS video loaded
+            let isCurrentVideoInPlayer = false;
+            try {
+                if (tubePlayer && tubePlayer.getVideoData) {
+                    const videoData = tubePlayer.getVideoData();
+                    isCurrentVideoInPlayer = videoData && videoData.video_id === newSong.videoInfo?.videoId;
+                }
+            } catch (e) {
+                console.warn('Could not check player video data:', e);
+            }
+
+            // Load if: Different song OR currentSong is missing OR it's not actually in the player yet
+            if (!currentSong || newSong.id !== currentSong.id || !isCurrentVideoInPlayer) {
+                console.log('Loading/Syncing video:', newSong.songName);
+                currentSong = newSong;
+                songDuration = currentSong.duration || 180;
+
+                if (tubePlayer && tubePlayer.loadVideoById && currentSong.videoInfo?.videoId) {
+                    tubePlayer.loadVideoById({
+                        videoId: currentSong.videoInfo.videoId,
+                        startSeconds: (currentData.currentTime || 0) + 0.5, // Buffer a bit
+                        suggestedQuality: 'hd1080'
+                    });
+                    if (tubePlayer.setVolume) tubePlayer.setVolume(100);
+                }
+            } else {
+                // If song is the same and loaded, check for drastic time offset (seeking)
+                if (tubePlayer && tubePlayer.getCurrentTime && newIsPlaying) {
+                    const playerTime = tubePlayer.getCurrentTime();
+                    const serverTime = currentData.currentTime || 0;
+                    const serverLastInteraction = currentData.playbackState?.lastInteraction || 0;
+
+                    // YT Player state 1 is playing, 3 is buffering, 2 is paused
+                    const playerStatus = tubePlayer.getPlayerState();
+
+                    const offset = Math.abs(playerTime - serverTime);
+
+                    // CASE 1: New manual interaction from Admin (e.g., Seek/Skipped)
+                    // We force a sync if interaction timestamp has changed
+                    if (serverLastInteraction !== localLastInteraction) {
+                        console.log('Manual interaction detected. Syncing time:', serverTime);
+                        tubePlayer.seekTo(serverTime, true);
+                        localLastInteraction = serverLastInteraction;
+                    }
+                    // CASE 2: Natural playback drift
+                    // Only sync if the offset is HUGE (to handle major glitches or tab resuming)
+                    else if (offset > 10 && playerStatus !== 3) {
+                        console.log('Massive drift detected (>10s). Syncing:', serverTime);
+                        tubePlayer.seekTo(serverTime, true);
+                    }
+                }
+            }
+
+            // Cinema Mode Logic
+            if (currentData.playbackState && currentData.playbackState.cinemaMode) {
+                document.body.classList.add('cinema-mode');
+            } else {
+                document.body.classList.remove('cinema-mode');
+            }
+
+            const partyLights = document.getElementById('partyLights');
+            if (partyLights) {
+                if (currentData.playbackState && currentData.playbackState.partyMode) {
+                    partyLights.classList.add('active');
+                } else {
+                    partyLights.classList.remove('active');
+                }
+            }
+
+            // Sync Volume
+            if (tubePlayer && tubePlayer.setVolume && currentData.playbackState && currentData.playbackState.volume !== undefined) {
+                const currentVolume = tubePlayer.getVolume();
+                const targetVolume = currentData.playbackState.volume;
+                // Only set if diff > 1 to avoid jitter
+                if (Math.abs(currentVolume - targetVolume) > 1) {
+                    tubePlayer.setVolume(targetVolume);
+                }
+            }
+
+            // Sync Lyrics Mode
+            const queueSection = document.getElementById('queueSection');
+            const lyricsSection = document.getElementById('lyricsSection');
+            const lyricsContent = document.getElementById('lyricsContent');
+            
+            if (currentData.playbackState && currentData.playbackState.lyricsMode) {
+                if (queueSection) queueSection.classList.add('hidden');
+                if (lyricsSection) lyricsSection.classList.remove('hidden');
+                
+                // Render lyrics with active line highlight
+                if (lyricsContent) {
+                    const lyrics = (currentData.playbackState.currentLyrics || '').toString();
+                    const cursor = currentData.playbackState.lyricsCursor || 0;
+                    ensureLyricsRendered(lyricsContent, lyrics, cursor);
+                }
+            } else {
+                if (queueSection) queueSection.classList.remove('hidden');
+                if (lyricsSection) lyricsSection.classList.add('hidden');
+            }
+
+
+            // Sync Play/Pause and Visibility
+            if (tubePlayer && tubePlayer.getPlayerState) {
+                const playerState = tubePlayer.getPlayerState();
+
+                if (newIsPlaying) {
+                    if (playerState === YT.PlayerState.PAUSED || playerState === YT.PlayerState.CUED) {
+                        tubePlayer.playVideo();
+                    }
+                    if (videoWrapper) videoWrapper.classList.add('active');
+                } else {
+                    if (playerState === YT.PlayerState.PLAYING) {
+                        tubePlayer.pauseVideo();
+                    }
+                    // Hide when paused to satisfy user request "hide when not playing"
+                    if (videoWrapper) videoWrapper.classList.remove('active');
+                }
+            }
+
+            // Sync Location Mode
+            const locationInfo = document.getElementById('locationInfo');
+            if (locationInfo) {
+                const locationEnabled = currentData.playbackState && currentData.playbackState.locationEnabled;
+                if (locationEnabled) {
+                    locationInfo.style.display = 'block';
+                    // Start location tracking if not already started
+                    if (!currentLocation) {
+                        getCurrentLocation();
+                    }
+                } else {
+                    locationInfo.style.display = 'none';
+                }
+            }
+        } else {
+            // No song playing
+            currentSong = null;
+            if (videoWrapper) videoWrapper.classList.remove('active');
+            if (tubePlayer && tubePlayer.stopVideo) tubePlayer.stopVideo();
+        }
+
+        isPlaying = newIsPlaying;
+        serverCurrentTime = currentData.currentTime || 0;
+        lastUpdateTimestamp = Date.now();
+
+        updateUIDisplay(currentData, queueData, playedToday);
+    } catch (error) {
+        console.error('Error loading data:', error);
+        setConnectionError(true, '⚠️ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กำลังลองใหม่...');
+    }
+}
+
+// ===== Update UI =====
+function updateUIDisplay(currentData, queueData, playedToday = 0) {
+    const song = currentData.current;
+
+    // Toggle now playing/idle screen
+    if (!song) {
+        nowPlaying.classList.add('hidden');
+        const infoBox = document.getElementById('currentInfoBox');
+        if (infoBox) infoBox.classList.add('hidden');
+        idleMessage.classList.remove('hidden');
+        renderMiniQueue(queueData, playedToday); // Ensure queue is still rendered!
+        return;
+    }
+
+    nowPlaying.classList.remove('hidden');
+    const infoBox = document.getElementById('currentInfoBox');
+    if (infoBox) infoBox.classList.remove('hidden');
+    idleMessage.classList.add('hidden');
+
+    // Update main info
+    const info = song.videoInfo || {};
+    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='100%25' height='100%25' fill='%230f0f19'/%3E%3Ctext x='50%25' y='50%25' font-family='Kanit' font-size='120' fill='%236366f1' text-anchor='middle' dy='40'%3E🎵%3C/text%3E%3C/svg%3E";
+
+    const thumbnail = (info.thumbnail && typeof info.thumbnail === 'string') ? info.thumbnail : placeholder;
+    const thumbnailEl = document.getElementById('npThumbnail');
+    if (thumbnailEl) thumbnailEl.src = thumbnail;
+    const bgBlurEl = document.getElementById('npBgBlur');
+    if (bgBlurEl) bgBlurEl.src = thumbnail;
+
+    const titleEl = document.getElementById('npTitle');
+    if (titleEl) titleEl.textContent = song.songName;
+    const artistEl = document.getElementById('npArtist');
+    if (artistEl) artistEl.textContent = info.author || '-';
+    const requesterEl = document.getElementById('requesterName');
+    if (requesterEl) requesterEl.textContent = song.name || '-';
+
+    // Update song counter (Song #X of Today)
+    const badge = document.getElementById('songCounterBadge');
+    if (badge) {
+        // Current song is playedToday + 1
+        badge.textContent = `เพลงที่ ${playedToday + 1} ของวันนี้`;
+    }
+
+    renderMiniQueue(queueData, playedToday);
+}
+
+function updateUIProgress() {
+    if (!currentSong || !isPlaying) return;
+
+    // Use player's own time if available, otherwise inte '0.5';
         badge.style.pointerEvents = 'none';
         badge.innerHTML = '🌐 Online Mode';
         document.body.appendChild(badge);
@@ -714,3 +927,4 @@ function toggleLyricsMode() {
         lyricsSection.classList.add('hidden');
     }
 }
+
