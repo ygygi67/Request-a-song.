@@ -34,19 +34,20 @@
 - [Node.js](https://nodejs.org/) (เวอร์ชั่น 14 ขึ้นไป)
 
 ### 1. ติดตั้ง (Setup)
+Clone โปรเจกต์
 ```bash
-# Clone โปรเจกต์
 git clone https://github.com/ygygi67/Request-a-song.
 cd Request-a-song.
-
-# เข้าไปที่โฟลเดอร์ server และติดตั้งแพ็คเกจ
+```
+เข้าไปที่โฟลเดอร์ server และติดตั้งแพ็คเกจ
+```bash
 cd server
 npm install
 ```
 
 ### 2. เริ่มต้นใช้งาน (Run locally)
+รันเซิร์ฟเวอร์ (ในโฟลเดอร์ server)
 ```bash
-# รันเซิร์ฟเวอร์ (ในโฟลเดอร์ server)
 npm start
 ```
 - **หน้าขอเพลง**: `http://localhost:3000`
@@ -55,9 +56,13 @@ npm start
 
 ### 3. แบ่งปันให้เพื่อนเข้า (Online Share)
 ถ้าอยากให้เพื่อนที่อยู่คนละบ้านเข้ามาขอเพลงได้:
+รันคำสั่งนี้แทน npm start
 ```bash
-# รันคำสั่งนี้แทน npm start
 npm run share
+```
+```bash
+node server.js &
+cloudflared tunnel --url http://localhost:3000
 ```
 รอสักพัก... ระบบจะสร้าง **URL สาธารณะ** ให้ (เช่น `https://cool-music.loca.lt`) ก๊อปส่งให้เพื่อนได้เลย!
 
@@ -96,6 +101,7 @@ song-request-system/
 ---
 
 Made with ❤️ by [ygygi67] & Antigravity AI
+
 
 
 
